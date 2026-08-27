@@ -1,0 +1,36 @@
+plugins {
+    id 'application'
+}
+
+group = 'cs3227.mp1'
+version = '0.1.0-prototype'
+
+def javaHomePath = providers.systemProperty('java.home').get()
+def javafxModules = file("${javaHomePath}/jmods")
+def javafxModuleNames = 'javafx.controls,javafx.fxml'
+
+application {
+    mainClass = 'cs3227.prototype.PrototypeApp'
+    applicationDefaultJvmArgs = [
+            '--module-path', javafxModules.absolutePath,
+            '--add-modules', javafxModuleNames
+    ]
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+    options.compilerArgs.addAll([
+            '--module-path', javafxModules.absolutePath,
+            '--add-modules', javafxModuleNames
+    ])
+}
+
+tasks.withType(JavaExec).configureEach {
+    jvmArgs '--module-path', javafxModules.absolutePath,
+            '--add-modules', javafxModuleNames
+}
+
+tasks.register('verifyPrototypes', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'cs3227.prototype.PrototypeSmokeTest'
+}

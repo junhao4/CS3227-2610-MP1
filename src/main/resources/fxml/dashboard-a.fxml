@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<VBox spacing="24" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" styleClass="page">
+    <padding><Insets top="34" right="42" bottom="34" left="42" /></padding>
+    <HBox alignment="TOP_RIGHT"><VBox HBox.hgrow="ALWAYS" spacing="4"><Label text="Good afternoon, Alex" styleClass="page-title"/><Label text="Here is your spending picture for August 2026." styleClass="muted"/></VBox><Label text="PROTOTYPE v0.4 · BAR-STATE-FIX" styleClass="build-marker"/></HBox>
+    <HBox spacing="16">
+        <VBox HBox.hgrow="ALWAYS" styleClass="metric-card accent"><Label text="Remaining this month" styleClass="card-label"/><Label text="426.80" styleClass="metric-value"/><Label text="of 900.00 planned spending" styleClass="positive"/></VBox>
+        <VBox HBox.hgrow="ALWAYS" styleClass="metric-card"><Label text="Spent so far" styleClass="card-label"/><Label text="473.20" styleClass="metric-value"/><Label text="52.6% of monthly plan" styleClass="muted"/></VBox>
+        <VBox HBox.hgrow="ALWAYS" styleClass="metric-card"><Label text="Income recorded" styleClass="card-label"/><Label text="1,200.00" styleClass="metric-value"/><Label text="2 income entries" styleClass="muted"/></VBox>
+    </HBox>
+    <VBox spacing="14" styleClass="panel">
+        <HBox alignment="CENTER_LEFT"><Label text="Category budgets" styleClass="section-title"/><Label HBox.hgrow="ALWAYS"/><Label text="August 2026" styleClass="muted"/></HBox>
+        <VBox spacing="14">
+            <HBox alignment="CENTER_LEFT" spacing="12"><Label prefWidth="130" text="Food" styleClass="row-label"/><Label prefWidth="95" text="184 / 300" styleClass="amount-label"/><ProgressBar HBox.hgrow="ALWAYS" maxWidth="Infinity" progress="0.61" styleClass="budget-progress"/><Label prefWidth="72" text="61% used" styleClass="positive"/></HBox>
+            <HBox alignment="CENTER_LEFT" spacing="12"><Label prefWidth="130" text="Transport" styleClass="row-label"/><Label prefWidth="95" text="92 / 120" styleClass="amount-label"/><ProgressBar HBox.hgrow="ALWAYS" maxWidth="Infinity" progress="0.77" styleClass="budget-progress-warning"/><Label prefWidth="72" text="77% used" styleClass="warning"/></HBox>
+            <HBox alignment="CENTER_LEFT" spacing="12"><Label prefWidth="130" text="Entertainment" styleClass="row-label"/><Label prefWidth="95" text="197 / 180" styleClass="amount-label"/><ProgressBar HBox.hgrow="ALWAYS" maxWidth="Infinity" progress="1.0" styleClass="budget-progress-over"/><Label prefWidth="72" text="17 over" styleClass="danger"/></HBox>
+        </VBox>
+    </VBox>
+    <VBox spacing="10" styleClass="panel"><Label text="Recent activity" styleClass="section-title"/><Label text="Today   ·   Lunch                  Food                         -8.50" styleClass="transaction-row"/><Label text="Yesterday ·   MRT top-up           Transport                    -20.00" styleClass="transaction-row"/><Label text="12 Aug   ·   Monthly allowance      Allowance                  +600.00" styleClass="transaction-row"/></VBox>
+</VBox>

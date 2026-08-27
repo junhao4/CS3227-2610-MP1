@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<VBox spacing="20" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" styleClass="page">
+    <padding><Insets top="34" right="42" bottom="34" left="42" /></padding>
+    <HBox alignment="CENTER_LEFT"><VBox spacing="4"><Label text="Categories &amp; budgets" styleClass="page-title"/><Label text="Give every dollar a clear place in your month." styleClass="muted"/></VBox><Label HBox.hgrow="ALWAYS"/><Button text="＋ New category" styleClass="primary-button"/></HBox>
+    <VBox styleClass="panel" spacing="0"><HBox styleClass="table-header"><Label HBox.hgrow="ALWAYS" text="CATEGORY"/><Label prefWidth="145" text="AUGUST BUDGET"/><Label prefWidth="130" text="USED"/><Label prefWidth="110" text="STATUS"/></HBox><HBox styleClass="table-row"><Label HBox.hgrow="ALWAYS" text="Food"/><Label prefWidth="145" text="300.00"/><Label prefWidth="130" text="184.00"/><Label prefWidth="110" text="61%" styleClass="positive"/></HBox><HBox styleClass="table-row"><Label HBox.hgrow="ALWAYS" text="Transport"/><Label prefWidth="145" text="120.00"/><Label prefWidth="130" text="92.00"/><Label prefWidth="110" text="77%" styleClass="warning"/></HBox><HBox styleClass="table-row"><Label HBox.hgrow="ALWAYS" text="Entertainment"/><Label prefWidth="145" text="180.00"/><Label prefWidth="130" text="197.00"/><Label prefWidth="110" text="Over by 17" styleClass="danger"/></HBox><HBox styleClass="table-row"><Label HBox.hgrow="ALWAYS" text="Bills"/><Label prefWidth="145" text="Not set"/><Label prefWidth="130" text="0.00"/><Label prefWidth="110" text="No budget" styleClass="muted"/></HBox></VBox>
+    <VBox spacing="8" styleClass="tip-card"><Label text="Budget rule" styleClass="section-title"/><Label text="Budgets are set per expense category and reset each calendar month." styleClass="muted"/><Label text="Categories with existing transactions can be archived, not deleted." styleClass="muted"/></VBox>
+</VBox>

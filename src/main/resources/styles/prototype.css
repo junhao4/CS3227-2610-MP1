@@ -1,0 +1,57 @@
+.root { -fx-font-family: "Avenir Next"; -fx-background-color: #f7f8fa; -fx-text-fill: #1f2937; }
+.app-shell { -fx-background-color: #f7f8fa; }
+.sidebar { -fx-background-color: #17202b; }
+.brand { -fx-text-fill: #ffffff; -fx-font-size: 25px; -fx-font-weight: bold; }
+.sidebar-caption, .sidebar-footer { -fx-text-fill: #9caaba; -fx-font-size: 12px; }
+.sidebar-footer { -fx-padding: 12px 0 0 0; }
+.nav-heading { -fx-text-fill: #718096; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 14px 0 3px 0; }
+.nav-button { -fx-background-color: transparent; -fx-text-fill: #dbe3ec; -fx-alignment: CENTER_LEFT; -fx-padding: 10px 12px; -fx-background-radius: 7px; -fx-cursor: hand; }
+.nav-button:hover { -fx-background-color: #283747; }
+.nav-button.secondary { -fx-border-color: #405164; -fx-border-radius: 7px; }
+.page { -fx-background-color: #f7f8fa; }
+.page-title { -fx-font-size: 27px; -fx-font-weight: bold; -fx-text-fill: #17202b; }
+.build-marker { -fx-text-fill: #718096; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 7px 0 0 18px; }
+.muted { -fx-text-fill: #718096; -fx-font-size: 13px; }
+.metric-card, .panel, .category-card, .callout, .tip-card { -fx-background-color: #ffffff; -fx-background-radius: 12px; -fx-border-color: #e5eaf0; -fx-border-radius: 12px; -fx-padding: 20px; }
+.metric-card { -fx-min-height: 126px; }
+.metric-card.accent { -fx-background-color: #e7f7f0; -fx-border-color: #b9ead6; }
+.card-label { -fx-text-fill: #718096; -fx-font-size: 12px; -fx-font-weight: bold; }
+.metric-value { -fx-font-size: 25px; -fx-font-weight: bold; -fx-text-fill: #17202b; }
+.metric-value.small { -fx-font-size: 21px; }
+.section-title { -fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #17202b; }
+.row-label, .amount-label { -fx-text-fill: #263442; -fx-font-size: 13px; }
+.transaction-row { -fx-padding: 10px 0; -fx-border-color: transparent transparent #edf0f3 transparent; -fx-text-fill: #344454; }
+.positive, .amount-income { -fx-text-fill: #16845b; -fx-font-size: 13px; -fx-font-weight: bold; }
+.warning { -fx-text-fill: #a56a00; -fx-font-size: 13px; -fx-font-weight: bold; }
+.danger, .amount-expense, .danger-text { -fx-text-fill: #c44343; -fx-font-size: 13px; -fx-font-weight: bold; }
+.hero-card { -fx-background-color: #244b65; -fx-background-radius: 14px; -fx-padding: 25px; }
+.hero-title { -fx-text-fill: #ffffff; -fx-font-size: 25px; -fx-font-weight: bold; }
+.hero-subtitle { -fx-text-fill: #cfe5f2; -fx-font-size: 14px; }
+.hero-progress { -fx-pref-height: 12px; }
+.hero-progress .track { -fx-background-color: #496c82; -fx-background-radius: 8px; }
+.hero-progress .bar { -fx-background-color: #9fe3c6; -fx-background-radius: 8px; -fx-background-insets: 0; }
+.budget-progress { -fx-pref-height: 9px; -fx-accent: #16845b; }
+.budget-progress .track { -fx-background-color: #e8edf1; -fx-background-radius: 8px; -fx-background-insets: 0; }
+.budget-progress .bar { -fx-background-color: #16845b; -fx-background-radius: 8px; -fx-background-insets: 0; }
+.budget-progress-warning { -fx-pref-height: 9px; -fx-accent: #d39a2c; }
+.budget-progress-warning .track { -fx-background-color: #f2ead7; -fx-background-radius: 8px; -fx-background-insets: 0; }
+.budget-progress-warning .bar { -fx-background-color: #d39a2c; -fx-background-radius: 8px; -fx-background-insets: 0; }
+.budget-progress-over { -fx-pref-height: 9px; -fx-accent: #c44343; }
+.budget-progress-over .track { -fx-background-color: #f3dfdf; -fx-background-radius: 8px; -fx-background-insets: 0; }
+.budget-progress-over .bar { -fx-background-color: #c44343; -fx-background-radius: 8px; -fx-background-insets: 0; }
+.chart-panel { -fx-spacing: 18px; }
+.chart-row, .progress-text { -fx-text-fill: #527084; -fx-font-size: 13px; }
+.callout, .tip-card { -fx-background-color: #eef5f8; -fx-border-color: #d6e7ee; }
+.primary-button { -fx-background-color: #16845b; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px 16px; -fx-background-radius: 7px; -fx-cursor: hand; }
+.secondary-button, .toggle-button { -fx-background-color: #ffffff; -fx-border-color: #cbd5df; -fx-border-radius: 7px; -fx-padding: 10px 16px; -fx-text-fill: #344454; -fx-cursor: hand; }
+.toggle-button.selected { -fx-background-color: #dff4e9; -fx-border-color: #16845b; -fx-text-fill: #126847; -fx-font-weight: bold; }
+.text-button { -fx-background-color: transparent; -fx-text-fill: #16845b; -fx-padding: 4px 0; -fx-alignment: CENTER_LEFT; -fx-cursor: hand; }
+.table-header { -fx-background-color: #f1f4f6; -fx-padding: 12px 14px; -fx-text-fill: #718096; -fx-font-size: 11px; -fx-font-weight: bold; }
+.table-row { -fx-padding: 14px; -fx-border-color: transparent transparent #e8edf1 transparent; -fx-alignment: CENTER_LEFT; }
+.transaction-table { -fx-padding: 0; }
+.form-panel { -fx-max-width: 560px; }
+.amount-input { -fx-font-size: 25px; -fx-font-weight: bold; }
+.empty-state { -fx-background-color: #f7f8fa; }
+.empty-title { -fx-font-size: 22px; -fx-font-weight: bold; }
+.flow-pane { -fx-hgap: 14px; -fx-vgap: 14px; }
+.danger-card { -fx-border-color: #e8bcbc; -fx-background-color: #fff9f9; }

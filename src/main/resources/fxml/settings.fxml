@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.VBox?>
+<VBox spacing="20" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" styleClass="page">
+    <padding><Insets top="34" right="42" bottom="34" left="42" /></padding>
+    <VBox spacing="4"><Label text="Data &amp; settings" styleClass="page-title"/><Label text="Keep your local budget data safe and portable." styleClass="muted"/></VBox>
+    <VBox maxWidth="640" spacing="14" styleClass="panel"><Label text="Backup and recovery" styleClass="section-title"/><Label text="Export a full backup file or replace your current data from a validated backup." styleClass="muted"/><Button text="Export all data" styleClass="primary-button"/><Button text="Import backup" styleClass="secondary-button"/><Separator/><Label text="Import replaces the current local data after confirmation." styleClass="warning"/></VBox>
+    <VBox maxWidth="640" spacing="10" styleClass="panel"><Label text="Application" styleClass="section-title"/><Label text="Pocketwise prototype · v0.4 · BAR-STATE-FIX" styleClass="muted"/><Label text="Storage: local, single-user, offline" styleClass="muted"/><Label text="Wallets and transfers: planned for a later release" styleClass="muted"/></VBox>
+</VBox>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<VBox spacing="20" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" styleClass="page">
+    <padding><Insets top="34" right="42" bottom="34" left="42" /></padding>
+    <HBox alignment="CENTER_LEFT"><VBox spacing="4"><Label text="Transactions" styleClass="page-title"/><Label text="Review every income and expense in one place." styleClass="muted"/></VBox><Label HBox.hgrow="ALWAYS"/><Button text="＋ Add transaction" styleClass="primary-button"/></HBox>
+    <HBox spacing="10"><TextField promptText="Search notes…" prefWidth="240"/><ComboBox promptText="Month: August 2026" prefWidth="180"/><ComboBox promptText="Type: All" prefWidth="140"/><ComboBox promptText="Category: All" prefWidth="170"/></HBox>
+    <VBox styleClass="panel transaction-table" spacing="0">
+        <HBox styleClass="table-header"><Label HBox.hgrow="ALWAYS" text="DATE / NOTE"/><Label prefWidth="150" text="CATEGORY"/><Label prefWidth="110" text="AMOUNT"/></HBox>
+        <HBox styleClass="table-row"><VBox HBox.hgrow="ALWAYS"><Label text="Today" styleClass="row-label"/><Label text="Lunch with friends" styleClass="muted"/></VBox><Label prefWidth="150" text="Food"/><Label prefWidth="110" text="-8.50" styleClass="amount-expense"/></HBox>
+        <HBox styleClass="table-row"><VBox HBox.hgrow="ALWAYS"><Label text="Yesterday" styleClass="row-label"/><Label text="MRT top-up" styleClass="muted"/></VBox><Label prefWidth="150" text="Transport"/><Label prefWidth="110" text="-20.00" styleClass="amount-expense"/></HBox>
+        <HBox styleClass="table-row"><VBox HBox.hgrow="ALWAYS"><Label text="12 Aug 2026" styleClass="row-label"/><Label text="Monthly allowance" styleClass="muted"/></VBox><Label prefWidth="150" text="Allowance"/><Label prefWidth="110" text="+600.00" styleClass="amount-income"/></HBox>
+        <HBox styleClass="table-row"><VBox HBox.hgrow="ALWAYS"><Label text="10 Aug 2026" styleClass="row-label"/><Label text="New headphones" styleClass="muted"/></VBox><Label prefWidth="150" text="Entertainment"/><Label prefWidth="110" text="-79.90" styleClass="amount-expense"/></HBox>
+    </VBox>
+    <Label text="Showing 4 of 28 transactions · newest first" styleClass="muted"/>
+</VBox>
