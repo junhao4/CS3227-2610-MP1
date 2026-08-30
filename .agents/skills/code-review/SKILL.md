@@ -7,8 +7,14 @@ description: Review an implemented MoneyMap change after testing and documentati
 
 Review; do not fix. Inspect the implementation, tests, specifications,
 acceptance evidence, User Guide, Developer Guide, diagrams, and Git diff.
-Preserve unrelated changes. Do not edit code, tests, docs, specifications,
+Preserve unrelated changes. Do not edit code, tests, guides, specifications,
 build files, logs, Git, or GitHub; do not install tools or dependencies.
+
+Write every review to exactly one canonical report:
+`reviews/issue-<number>.md`. Create `reviews/` when needed. For a rerun,
+update that same issue file; do not create a dated, numbered, or parallel
+report. If the issue number cannot be established from the request, issue,
+branch, or repository evidence, report `BLOCKED` and ask for it.
 
 ## Truth and gates
 
@@ -35,8 +41,9 @@ unverified behaviour available.
    security where applicable, and maintainability.
 6. Compare code and observed behaviour with every affected guide, command,
    example, diagram, error claim, and manual-testing instruction.
-7. Read [report](references/review-report.md); record findings, limitations,
-   evidence, and rerun decisions. Re-read the report and final diff.
+7. Read [report](references/review-report.md); write or update the canonical
+   report with findings, limitations, evidence, rerun decisions, and the
+   agent handoff. Re-read the report and final diff.
 
 Steps 1–3 are mandatory for a normal feature review. Narrow later steps only
 when irrelevant; report what was skipped and why.
@@ -57,6 +64,13 @@ requirement, evidence, expected/actual behaviour, reproduction or inspection
 path, impact, likely cause and confidence, fix direction, files/responsibility,
 tests, documentation impact, and post-fix checks.
 
+Give every finding a stable ID in the form `CR-<issue>-<number>` and a status.
+Keep the ID unchanged when the report is rerun. Use `Open`, `Accepted`,
+`In progress`, `Fixed`, `Rejected`, `Not reproducible`, or `Deferred`.
+`Open` is the default for a new evidence-based finding. A resolved status must
+include the evidence and verification that justify the transition; do not
+silently delete old findings.
+
 ## Rerun decisions
 
 Report all four explicitly:
@@ -74,3 +88,17 @@ Report all four explicitly:
   `BLOCKED`.
 
 Do not update docs to describe an unverified fix.
+
+## Handoff requirement
+
+The canonical report is also the handoff for the next agent. Its `Agent
+handoff` section must be complete whenever any follow-up is needed. For each
+action, state the responsible skill or human, priority, exact files and line
+locations, the requirement or finding it addresses, expected change, tests or
+manual checks to run, success criteria, documentation impact, and the required
+next rerun. Copy no reasoning that the next agent would need to rediscover.
+
+If no follow-up is needed, state that explicitly and record the final checks
+and human-review status. Keep findings and handoff synchronized when a review
+is rerun: resolve or retain each finding with evidence rather than appending
+contradictory conclusions.
