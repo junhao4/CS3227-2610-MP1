@@ -5,13 +5,21 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.layout.BorderPane;
 
+import cs3227.moneymap.service.TransactionService;
+
 import java.io.IOException;
 import java.util.Objects;
 
 /** Coordinates navigation between the production application areas. */
 public class ApplicationController {
+    private final TransactionService transactionService;
+
     @FXML
     private BorderPane shell;
+
+    ApplicationController(TransactionService transactionService) {
+        this.transactionService = Objects.requireNonNull(transactionService);
+    }
 
     @FXML
     private void initialize() {
@@ -38,9 +46,14 @@ public class ApplicationController {
         loadView("/moneymap/data-and-settings.fxml");
     }
 
+    /** Loads a shell destination and supplies the Transactions view with its service dependency. */
     private void loadView(String resource) {
         try {
-            Node view = FXMLLoader.load(Objects.requireNonNull(getClass().getResource(resource)));
+            FXMLLoader loader = new FXMLLoader(Objects.requireNonNull(getClass().getResource(resource)));
+            if ("/moneymap/transactions.fxml".equals(resource)) {
+                loader.setControllerFactory(type -> new TransactionController(transactionService));
+            }
+            Node view = loader.load();
             shell.setCenter(view);
         } catch (IOException | RuntimeException exception) {
             throw new IllegalStateException("Could not load application view: " + resource, exception);

@@ -1,11 +1,17 @@
 package cs3227.moneymap;
 
+import cs3227.moneymap.persistence.JsonDataRepository;
+import cs3227.moneymap.service.TransactionService;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+
+import java.nio.file.Files;
+import java.time.Clock;
+import java.util.UUID;
 
 /** Verifies the production startup path and every shell navigation mapping. */
 public class ApplicationSmokeTest extends Application {
@@ -14,7 +20,10 @@ public class ApplicationSmokeTest extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         try {
-            new MoneyMapApp().start(stage);
+            TransactionService service = new TransactionService(
+                    new JsonDataRepository(Files.createTempDirectory("moneymap-application-smoke-")),
+                    Clock.systemDefaultZone(), UUID::randomUUID);
+            new MoneyMapApp(service).start(stage);
 
             require(stage.isShowing(), "The production stage was not shown");
             require(EXPECTED_TITLE.equals(stage.getTitle()), "The production title is incorrect");

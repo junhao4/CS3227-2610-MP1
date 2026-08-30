@@ -20,6 +20,14 @@ dependencies {
         implementation("org.openjfx:javafx-fxml:${javaFxVersion}:${platform}")
         implementation("org.openjfx:javafx-graphics:${javaFxVersion}:${platform}")
     }
+
+    implementation 'com.google.code.gson:gson:2.13.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.0'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
 }
 
 application {
@@ -43,11 +51,22 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 25
 }
 
+tasks.withType(JavaExec).configureEach {
+    jvmArgs '--enable-native-access=javafx.graphics'
+}
+
 tasks.register('verifyPrototypes', JavaExec) {
     group = 'verification'
     description = 'Loads every exploratory prototype FXML resource.'
     classpath = sourceSets.prototype.runtimeClasspath
     mainClass = 'cs3227.prototype.PrototypeSmokeTest'
+}
+
+tasks.register('runPrototype', JavaExec) {
+    group = 'application'
+    description = 'Runs the interactive static UI prototype application.'
+    classpath = sourceSets.prototype.runtimeClasspath
+    mainClass = 'cs3227.prototype.PrototypeApp'
 }
 
 tasks.register('verifyApplication', JavaExec) {
@@ -57,8 +76,16 @@ tasks.register('verifyApplication', JavaExec) {
     mainClass = 'cs3227.moneymap.ApplicationSmokeTest'
 }
 
+tasks.register('verifyTransactionUi', JavaExec) {
+    group = 'verification'
+    description = 'Verifies transaction creation, validation, fallback assignment, and reload in JavaFX.'
+    classpath = sourceSets.smoke.runtimeClasspath
+    mainClass = 'cs3227.moneymap.TransactionUiSmokeTest'
+}
+
 tasks.named('check') {
     dependsOn tasks.named('verifyApplication')
+    dependsOn tasks.named('verifyTransactionUi')
 }
 
 tasks.named('shadowJar') {
