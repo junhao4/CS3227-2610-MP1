@@ -22,6 +22,11 @@ Use this order: verified behaviour/evidence, approved issue and acceptance
 criteria, `specs/ProductSpecification.md`, `specs/MP1-requirements.md`, current
 guides, then textbook guidance. Project sources define behaviour.
 
+Use Codex's native todo/plan facility to create one item for every applicable
+review check. Mark an item complete only after obtaining evidence; do not
+report `PASS` while any applicable check is incomplete, unverified, or marked
+not applicable without a reason.
+
 Stop or report `BLOCKED` if the review target, release status, or required
 evidence is unavailable. Never call an unavailable check passed. Do not call
 unverified behaviour available.
