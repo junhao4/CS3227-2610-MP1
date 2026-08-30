@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+<VBox id="categoriesAndBudgetsView" spacing="14" styleClass="page" xmlns="http://javafx.com/javafx/17.0.7" xmlns:fx="http://javafx.com/fxml/1">
+    <padding><Insets top="42" right="48" bottom="42" left="48" /></padding>
+    <Label text="Categories and Budgets" styleClass="page-title" />
+    <Label text="Organise transactions and set monthly spending limits here." styleClass="muted" />
+    <VBox spacing="8" styleClass="empty-panel">
+        <Label text="No categories configured" styleClass="section-title" />
+        <Label text="Starter categories, custom categories, and monthly budgets will be managed in this area." styleClass="muted" wrapText="true" />
+    </VBox>
+</VBox>

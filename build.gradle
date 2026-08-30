@@ -1,36 +1,80 @@
 plugins {
     id 'application'
+    id 'com.gradleup.shadow' version '9.4.3'
 }
 
 group = 'cs3227.mp1'
-version = '0.1.0-prototype'
+version = '0.1.0'
 
-def javaHomePath = providers.systemProperty('java.home').get()
-def javafxModules = file("${javaHomePath}/jmods")
-def javafxModuleNames = 'javafx.controls,javafx.fxml'
+repositories {
+    mavenCentral()
+}
+
+def javaFxVersion = '17.0.7'
+def targetPlatforms = ['win', 'linux', 'mac-aarch64']
+
+dependencies {
+    targetPlatforms.each { platform ->
+        implementation("org.openjfx:javafx-base:${javaFxVersion}:${platform}")
+        implementation("org.openjfx:javafx-controls:${javaFxVersion}:${platform}")
+        implementation("org.openjfx:javafx-fxml:${javaFxVersion}:${platform}")
+        implementation("org.openjfx:javafx-graphics:${javaFxVersion}:${platform}")
+    }
+}
 
 application {
-    mainClass = 'cs3227.prototype.PrototypeApp'
-    applicationDefaultJvmArgs = [
-            '--module-path', javafxModules.absolutePath,
-            '--add-modules', javafxModuleNames
-    ]
+    mainClass = 'cs3227.moneymap.Launcher'
+}
+
+sourceSets {
+    smoke {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += output + compileClasspath
+    }
+    prototype
+}
+
+configurations {
+    smokeImplementation.extendsFrom implementation
+    prototypeImplementation.extendsFrom implementation
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.release = 25
-    options.compilerArgs.addAll([
-            '--module-path', javafxModules.absolutePath,
-            '--add-modules', javafxModuleNames
-    ])
-}
-
-tasks.withType(JavaExec).configureEach {
-    jvmArgs '--module-path', javafxModules.absolutePath,
-            '--add-modules', javafxModuleNames
 }
 
 tasks.register('verifyPrototypes', JavaExec) {
-    classpath = sourceSets.main.runtimeClasspath
+    group = 'verification'
+    description = 'Loads every exploratory prototype FXML resource.'
+    classpath = sourceSets.prototype.runtimeClasspath
     mainClass = 'cs3227.prototype.PrototypeSmokeTest'
+}
+
+tasks.register('verifyApplication', JavaExec) {
+    group = 'verification'
+    description = 'Verifies production startup and every navigation destination.'
+    classpath = sourceSets.smoke.runtimeClasspath
+    mainClass = 'cs3227.moneymap.ApplicationSmokeTest'
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyApplication')
+}
+
+tasks.named('shadowJar') {
+    archiveFileName = 'MoneyMap.jar'
+    mergeServiceFiles()
+    manifest {
+        attributes 'Enable-Native-Access': 'ALL-UNNAMED'
+    }
+}
+
+tasks.named('jar') {
+    enabled = false
+}
+
+['startScripts', 'distTar', 'distZip'].each { taskName ->
+    tasks.named(taskName) {
+        enabled = false
+    }
 }

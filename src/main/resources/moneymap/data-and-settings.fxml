@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+<VBox id="dataAndSettingsView" spacing="14" styleClass="page" xmlns="http://javafx.com/javafx/17.0.7" xmlns:fx="http://javafx.com/fxml/1">
+    <padding><Insets top="42" right="48" bottom="42" left="48" /></padding>
+    <Label text="Data and Settings" styleClass="page-title" />
+    <Label text="Manage local data and backups here." styleClass="muted" />
+    <VBox spacing="8" styleClass="empty-panel">
+        <Label text="Data tools are not configured yet" styleClass="section-title" />
+        <Label text="Local persistence, export, import, and application settings will be added in a later issue." styleClass="muted" wrapText="true" />
+    </VBox>
+</VBox>
