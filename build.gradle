@@ -1,5 +1,6 @@
 plugins {
     id 'application'
+    id 'checkstyle'
     id 'com.gradleup.shadow' version '9.4.3'
 }
 
@@ -8,6 +9,12 @@ version = '0.1.0'
 
 repositories {
     mavenCentral()
+}
+
+checkstyle {
+    toolVersion = '10.26.1'
+    configFile = file('config/checkstyle/checkstyle.xml')
+    maxWarnings = 0
 }
 
 def javaFxVersion = '17.0.7'
@@ -40,6 +47,16 @@ sourceSets {
         runtimeClasspath += output + compileClasspath
     }
     prototype
+}
+
+tasks.named('checkstyleSmoke', Checkstyle) {
+    source sourceSets.smoke.allJava
+    classpath = sourceSets.smoke.compileClasspath
+}
+
+tasks.named('checkstylePrototype', Checkstyle) {
+    source sourceSets.prototype.allJava
+    classpath = sourceSets.prototype.compileClasspath
 }
 
 configurations {
@@ -83,9 +100,21 @@ tasks.register('verifyTransactionUi', JavaExec) {
     mainClass = 'cs3227.moneymap.TransactionUiSmokeTest'
 }
 
+tasks.register('verifyCategoryUi', JavaExec) {
+    group = 'verification'
+    description = 'Verifies custom category creation, validation, type scoping, and reload in JavaFX.'
+    classpath = sourceSets.smoke.runtimeClasspath
+    mainClass = 'cs3227.moneymap.CategoryUiSmokeTest'
+}
+
 tasks.named('check') {
+    dependsOn tasks.named('checkstyleMain')
+    dependsOn tasks.named('checkstyleTest')
+    dependsOn tasks.named('checkstyleSmoke')
+    dependsOn tasks.named('checkstylePrototype')
     dependsOn tasks.named('verifyApplication')
     dependsOn tasks.named('verifyTransactionUi')
+    dependsOn tasks.named('verifyCategoryUi')
 }
 
 tasks.named('shadowJar') {
