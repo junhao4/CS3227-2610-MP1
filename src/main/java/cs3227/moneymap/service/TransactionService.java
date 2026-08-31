@@ -60,7 +60,17 @@ public final class TransactionService {
      */
     public List<Category> categoriesFor(TransactionType type) {
         Objects.requireNonNull(type, "Transaction type is required");
-        return state.categories().stream().filter(category -> category.type() == type).toList();
+        return state.categories().stream()
+                .filter(category -> category.type() == type && !category.archived())
+                .toList();
+    }
+
+    /** Returns all categories, including archived categories needed by history displays.
+     *
+     * @return immutable category list
+     */
+    public List<Category> allCategories() {
+        return state.categories();
     }
 
     /**
@@ -90,6 +100,68 @@ public final class TransactionService {
         persist(candidate);
         state = candidate;
         return category;
+    }
+
+    /** Validates, persists, and publishes a renamed ordinary category.
+     *
+     * @param categoryId category identity to rename
+     * @param name replacement category name
+     * @return persisted renamed category
+     */
+    public Category renameCategory(UUID categoryId, String name) {
+        Category category = requireOrdinaryCategory(categoryId);
+        String normalizedName = name == null ? "" : name.strip();
+        if (normalizedName.isBlank()) {
+            throw new IllegalArgumentException("Category name is required.");
+        }
+        if (normalizedName.codePointCount(0, normalizedName.length()) > 40) {
+            throw new IllegalArgumentException("Category name must contain 1 to 40 characters.");
+        }
+        boolean duplicate = state.categories().stream()
+                .filter(candidate -> candidate.type() == category.type() && !candidate.id().equals(category.id()))
+                .anyMatch(candidate -> candidate.name().equalsIgnoreCase(normalizedName));
+        if (duplicate) {
+            throw new IllegalArgumentException("A category with this name already exists for "
+                    + displayType(category.type()) + ".");
+        }
+        ApplicationState candidate = state.withRenamedCategory(category, normalizedName);
+        persist(candidate);
+        state = candidate;
+        return categoryIn(candidate, category.id());
+    }
+
+    /** Archives an ordinary category while retaining its identity for history.
+     *
+     * @param categoryId category identity to archive
+     * @return persisted archived category
+     */
+    public Category archiveCategory(UUID categoryId) {
+        Category category = requireOrdinaryCategory(categoryId);
+        ApplicationState candidate = state.withArchivedCategory(category);
+        persist(candidate);
+        state = candidate;
+        return categoryIn(candidate, category.id());
+    }
+
+    /** Restores an archived ordinary category to new-transaction selection.
+     *
+     * @param categoryId category identity to restore
+     * @return persisted active category
+     */
+    public Category restoreCategory(UUID categoryId) {
+        Category category = requireOrdinaryCategory(categoryId);
+        if (!category.archived()) {
+            throw new IllegalArgumentException("Category is already active.");
+        }
+        boolean duplicateActiveName = categoriesFor(category.type()).stream()
+                .anyMatch(candidate -> candidate.name().equalsIgnoreCase(category.name()));
+        if (duplicateActiveName) {
+            throw new IllegalArgumentException("Rename this archived category before restoring it.");
+        }
+        ApplicationState candidate = state.withRestoredCategory(category);
+        persist(candidate);
+        state = candidate;
+        return categoryIn(candidate, category.id());
     }
 
     /**
@@ -167,7 +239,30 @@ public final class TransactionService {
         if (category.type() != type) {
             throw new IllegalArgumentException("Selected category does not match the transaction type.");
         }
+        if (category.archived()) {
+            throw new IllegalArgumentException("Archived categories cannot be used for new transactions.");
+        }
         return category;
+    }
+
+    /** Finds a category and protects both permanent fallback categories from lifecycle changes. */
+    private Category requireOrdinaryCategory(UUID categoryId) {
+        Objects.requireNonNull(categoryId, "Category is required.");
+        Category category = state.categories().stream()
+                .filter(candidate -> candidate.id().equals(categoryId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Selected category does not exist."));
+        if (category.permanentFallback()) {
+            throw new IllegalArgumentException("Uncategorised categories cannot be changed.");
+        }
+        return category;
+    }
+
+    private static Category categoryIn(ApplicationState candidate, UUID categoryId) {
+        return candidate.categories().stream()
+                .filter(category -> category.id().equals(categoryId))
+                .findFirst()
+                .orElseThrow();
     }
 
     /** Saves candidate state before it becomes visible to callers. */
@@ -175,7 +270,7 @@ public final class TransactionService {
         try {
             repository.save(candidate);
         } catch (IOException exception) {
-            throw new PersistenceException("MoneyMap could not save the transaction.", exception);
+            throw new PersistenceException("MoneyMap could not save the category or transaction.", exception);
         }
     }
 

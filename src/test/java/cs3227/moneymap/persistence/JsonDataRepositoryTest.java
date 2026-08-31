@@ -73,6 +73,30 @@ class JsonDataRepositoryTest {
     }
 
     @Test
+    void saveThenLoad_preservesRenamedAndArchivedCategoriesAndReferences() throws IOException {
+        JsonDataRepository repository = new JsonDataRepository(applicationDirectory);
+        ApplicationState initial = ApplicationState.withStarterCategories();
+        Category food = initial.categories().stream()
+                .filter(category -> category.name().equals("Food"))
+                .findFirst()
+                .orElseThrow();
+        Category renamed = new Category(food.id(), food.type(), "Meals", false, true);
+        Transaction transaction = new Transaction(
+                UUID.fromString("20000000-0000-0000-0000-000000000002"), TransactionType.EXPENSE,
+                MoneyAmount.parse("8.50"), LocalDate.of(2026, 8, 30), renamed, "Lunch");
+        ApplicationState saved = new ApplicationState(
+                initial.categories().stream()
+                        .map(category -> category.id().equals(food.id()) ? renamed : category).toList(),
+                java.util.List.of(transaction));
+
+        repository.save(saved);
+
+        assertEquals(saved, repository.load().state());
+        assertTrue(repository.load().state().categories().stream()
+                .filter(category -> category.id().equals(food.id())).findFirst().orElseThrow().archived());
+    }
+
+    @Test
     void load_malformedJson_preservesCorruptFileAndReturnsSafeSeededState() throws IOException {
         JsonDataRepository repository = new JsonDataRepository(applicationDirectory);
         Files.createDirectories(repository.dataFile().getParent());

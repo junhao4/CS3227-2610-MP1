@@ -15,6 +15,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
 import java.nio.file.Files;
@@ -59,7 +60,9 @@ public class CategoryUiSmokeTest extends Application {
                     .anyMatch(category -> category.name().equals("Investments")),
                     "Valid custom category was not created");
             require(requireNode(view, "categoryRows", VBox.class).getChildren().stream()
-                    .map(node -> ((Label) node).getText()).anyMatch(text -> text.equals("Investments · Income")),
+                    .map(node -> ((HBox) node).getChildren().get(0))
+                    .map(node -> ((Label) node).getText())
+                    .anyMatch(text -> text.equals("Investments · Income")),
                     "Created category was not displayed");
 
             type.setValue(TransactionType.EXPENSE);
@@ -77,6 +80,34 @@ public class CategoryUiSmokeTest extends Application {
                     .filter(category -> category.name().equalsIgnoreCase("Investments")).count() == 1,
                     "Duplicate category was created");
 
+            Category archived = service.createCategory(TransactionType.EXPENSE, "Loans");
+            service.renameCategory(archived.id(), "Archived investments");
+            service.archiveCategory(archived.id());
+            Parent lifecycleView = loadView(service);
+            stage.setScene(new Scene(lifecycleView, 700, 600));
+            stage.show();
+            require(requireNode(lifecycleView, "categoryRows", VBox.class).getChildren().stream()
+                    .map(node -> ((HBox) node).getChildren().get(0))
+                    .map(node -> ((Label) node).getText())
+                    .noneMatch(text -> text.equals("Archived investments · Expense")),
+                    "Archived category was shown in the active view");
+            requireNode(lifecycleView, "archivedCategoriesButton", Button.class).fire();
+            require(!requireNode(lifecycleView, "categoryCreationPanel", VBox.class).isVisible(),
+                    "Category creation panel was shown in the archived view");
+            require(requireNode(lifecycleView, "categoryListTitle", Label.class)
+                            .getText().equals("Archived categories"),
+                    "Archived view title was not shown");
+            require(requireNode(lifecycleView, "categoryRows", VBox.class).getChildren().stream()
+                    .map(node -> ((HBox) node).getChildren().get(0))
+                    .map(node -> ((Label) node).getText())
+                    .anyMatch(text -> text.equals("Archived investments · Expense")),
+                    "Archived category was not shown in the archived view");
+            requireNode(lifecycleView, "restoreCategoryButton", Button.class).fire();
+            require(service.categoriesFor(TransactionType.EXPENSE).stream()
+                    .anyMatch(category -> category.name().equals("Archived investments")),
+                    "Restored category was not returned to active selection");
+            requireNode(lifecycleView, "activeCategoriesButton", Button.class).fire();
+
             Parent transactionView = loadTransactionView(service);
             stage.setScene(new Scene(transactionView, 900, 700));
             stage.show();
@@ -91,6 +122,9 @@ public class CategoryUiSmokeTest extends Application {
                     .noneMatch(category -> category.name().equals("Investments")
                             && category.type() == TransactionType.INCOME),
                     "Incompatible category was offered for a transaction");
+            require(transactionCategories.getItems().stream()
+                    .anyMatch(category -> category.name().equals("Archived investments")),
+                    "Restored category was not offered for a transaction");
 
             TransactionService reloaded = createService(applicationDirectory);
             require(reloaded.categoriesFor(TransactionType.INCOME).stream()
@@ -99,6 +133,9 @@ public class CategoryUiSmokeTest extends Application {
             require(reloaded.categoriesFor(TransactionType.EXPENSE).stream()
                     .anyMatch(category -> category.name().equals("Investments")),
                     "Expense category did not survive restart");
+            require(reloaded.categoriesFor(TransactionType.EXPENSE).stream()
+                    .anyMatch(category -> category.name().equals("Archived investments")),
+                    "Restored category did not survive restart as active");
             Category income = reloaded.categoriesFor(TransactionType.INCOME).stream()
                     .filter(category -> category.name().equals("Investments")).findFirst().orElseThrow();
             require(reloaded.categoriesFor(TransactionType.EXPENSE).stream()

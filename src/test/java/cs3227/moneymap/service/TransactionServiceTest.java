@@ -100,6 +100,77 @@ class TransactionServiceTest {
     }
 
     @Test
+    void renameCategory_updatesHistoricalReferencesAndRejectsDuplicateNames() throws IOException {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        Transaction transaction = service.createTransaction(
+                TransactionType.EXPENSE, "5.00", TODAY, food.id(), "Lunch");
+
+        Category renamed = service.renameCategory(food.id(), "Meals");
+
+        assertEquals("Meals", renamed.name());
+        assertEquals(renamed, service.transactions().get(0).category());
+        assertThrows(IllegalArgumentException.class, () -> service.renameCategory(renamed.id(), "Transport"));
+        assertEquals(2, repository.saveCount);
+    }
+
+    @Test
+    void renameCategory_appliesNameRulesAndProtectsFallbacks() {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        Category fallback = categoryNamed("Uncategorised", TransactionType.EXPENSE);
+
+        assertThrows(IllegalArgumentException.class, () -> service.renameCategory(food.id(), "   "));
+        assertThrows(IllegalArgumentException.class, () -> service.renameCategory(food.id(), "a".repeat(41)));
+        assertThrows(IllegalArgumentException.class, () -> service.renameCategory(fallback.id(), "Miscellaneous"));
+        assertEquals("Food", categoryNamed("Food", TransactionType.EXPENSE).name());
+    }
+
+    @Test
+    void archiveCategory_preservesHistoryButExcludesNewTransactionsAndProtectsFallback() throws IOException {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        Transaction transaction = service.createTransaction(
+                TransactionType.EXPENSE, "5.00", TODAY, food.id(), "Lunch");
+
+        Category archived = service.archiveCategory(food.id());
+
+        assertTrue(archived.archived());
+        assertTrue(service.allCategories().contains(archived));
+        assertTrue(service.categoriesFor(TransactionType.EXPENSE).stream()
+                .noneMatch(category -> category.id().equals(food.id())));
+        assertEquals(transaction.id(), service.transactions().get(0).id());
+        assertEquals(archived, service.transactions().get(0).category());
+        assertThrows(IllegalArgumentException.class, () -> service.createTransaction(
+                TransactionType.EXPENSE, "1.00", TODAY, food.id(), "New"));
+        Category fallback = categoryNamed("Uncategorised", TransactionType.EXPENSE);
+        assertThrows(IllegalArgumentException.class, () -> service.archiveCategory(fallback.id()));
+    }
+
+    @Test
+    void restoreCategory_returnsArchivedCategoryToNewTransactionsAndPersists() throws IOException {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        service.archiveCategory(food.id());
+
+        Category restored = service.restoreCategory(food.id());
+
+        assertTrue(!restored.archived());
+        assertTrue(service.categoriesFor(TransactionType.EXPENSE).contains(restored));
+        assertEquals(restored, repository.savedState.categories().stream()
+                .filter(category -> category.id().equals(food.id())).findFirst().orElseThrow());
+        assertEquals(2, repository.saveCount);
+    }
+
+    @Test
+    void restoreCategory_rejectsActiveCategoryAndArchivedNameClashingWithActiveCategory() {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        assertThrows(IllegalArgumentException.class, () -> service.restoreCategory(food.id()));
+
+        Category temporary = service.createCategory(TransactionType.EXPENSE, "Temporary");
+        service.archiveCategory(temporary.id());
+        service.createCategory(TransactionType.EXPENSE, "Temporary");
+
+        assertThrows(IllegalArgumentException.class, () -> service.restoreCategory(temporary.id()));
+    }
+
+    @Test
     void createTransaction_validIncome_persistsAndPublishesTransaction() throws IOException {
         Category salary = categoryNamed("Salary", TransactionType.INCOME);
 

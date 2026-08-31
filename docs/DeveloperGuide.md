@@ -28,7 +28,8 @@ executables:
 - `verifyCategoryUi` loads the real Categories and Budgets FXML with a temporary
   data directory and verifies custom category creation, normalization,
   duplicate validation, type scoping, visible feedback, the configured vertical
-  scroll container, and reload.
+  scroll container, active/archived-view switching, rename/archive/restore
+  controls, archived-category filtering, and reload.
 
 `verifyPrototypes` separately verifies that all eight exploratory prototype
 FXML resources still load. It does not test production behavior.
@@ -176,6 +177,21 @@ the selected type, constructs a non-fallback `Category`, and saves a candidate
 subsequently loaded views, a newly created category is available to the
 compatible transaction selector without a second category-management store.
 
+### Category lifecycle flow
+
+`CategoryController` defaults to an active-category view with the creation
+form. A labelled control reveals the archived-category view, which hides the
+creation form and provides Restore actions. Rename uses a standard text-input
+dialog; Archive uses a standard confirmation dialog. The service rejects
+permanent fallbacks, validates names and type-scoped duplicates, and saves a
+candidate state before publishing it. Restore also rejects a case-insensitive
+name clash with an active category of the same type, directing the user to
+rename the archived category first. `ApplicationState` rebuilds transaction
+category references by stable category ID when a category changes, preserving
+historical meaning while allowing `categoriesFor` to exclude archived categories
+from new transaction selection. History filters use `allCategories`, so
+archived categories remain discoverable there.
+
 ## Domain and validation decisions
 
 Money amounts are stored as `BigDecimal` through `MoneyAmount` and normalized
@@ -194,11 +210,15 @@ categories. Starter IDs are deterministically derived from type and name. The
 two `Uncategorised` entries have distinct identities and are marked as
 permanent fallbacks. Category selectors are type-specific, while the service
 also enforces compatibility so invalid controller or persisted input cannot
-bypass the rule.
+bypass the rule. Ordinary categories may be renamed, archived, and restored.
+Archived categories are retained for history but cannot be selected for new
+transactions. Restoring returns a category to active selection unless its name
+would clash with an active category of the same type. Permanent fallbacks cannot
+be renamed, archived, or restored.
 
-Renaming, archiving, permanent deletion, budgets, and Dashboard calculations
-are intentionally outside this increment. Custom category creation and
-transaction-history filtering and note search are implemented.
+Permanent deletion, budgets, and Dashboard calculations are intentionally
+outside this increment. Custom category creation, renaming, archiving,
+restoring, and transaction-history filtering and note search are implemented.
 
 ## JSON persistence and recovery
 
@@ -206,8 +226,8 @@ transaction-history filtering and note search are implemented.
 contains the current application state: starter and custom categories and
 transactions, including stable IDs,
 types, exact amount strings, ISO dates, category references, fallback flags,
-and notes. Future budget or category-lifecycle fields are not implemented in
-this schema increment.
+archived state, and notes. The schema version remains compatible with older
+category records because a missing archived flag loads as false.
 
 On first launch with neither a main nor temporary file, the repository returns
 the fixed starter categories and an empty transaction list without creating a
@@ -241,7 +261,7 @@ investigation or a later recovery feature.
 
 ## Testing strategy and evidence
 
-The 56 JUnit tests use specification-based equivalence partitions and boundary
+The 62 JUnit tests use specification-based equivalence partitions and boundary
 values:
 
 - amount tests cover zero, positive values, scales zero through two, whitespace,
@@ -253,7 +273,8 @@ values:
   fallbacks;
 - service tests cover injected today, type-specific categories, Income
   creation, automatic fallback, mismatch rejection, custom category creation
-  and validation, compatible transaction use, save invocation, save-before-publish failure behavior,
+  and validation, rename/archive/restore rules and conflicts, compatible
+  transaction use, save invocation, save-before-publish failure behavior,
   newest-first history ordering, each
   history filter, case-insensitive note search, combined queries, blank-query
   handling, empty results, and non-mutation;
@@ -268,8 +289,9 @@ values:
 checks the visible history controls, newest-first displayed results, combined
 filters, case-insensitive note search, the no-results state, and Clear filters
 in addition to the transaction-creation workflow. `CategoryUiSmokeTest` checks
-custom-category creation, validation, type scoping, and reload. These checks do
-not replace manual
+custom-category creation, validation, type scoping, active/archived switching,
+restore controls, archived-category exclusion from new transactions, and
+reload. These checks do not replace manual
 inspection: JavaFX resource lookup and focus-owner assertions cannot prove the
 rendered layout is visually correct on every platform.
 
@@ -347,6 +369,24 @@ Use a disposable directory so the test cannot alter personal data.
    the Categories and Budgets page vertically and confirm every category is
    reachable.
 6. Close and reopen MoneyMap. Confirm the custom categories remain available.
+
+### Rename, archive, and restore categories
+
+1. Create an ordinary category in **Categories and Budgets**, then select
+   **Rename** and confirm a valid new name in the standard dialog.
+2. Record a transaction using the renamed category and confirm the category
+   name appears in transaction history.
+3. Select **Archive**, confirm the standard confirmation dialog, then verify the
+   category is absent from the active view and new-transaction selector.
+4. Select **View archived categories**, verify the creation form is hidden, and
+   confirm the category appears with a **Restore** action.
+5. Select **Restore** and verify the category returns to the active view and
+   matching new-transaction selector. Create a same-type active category with
+   the archived name and confirm restore requires the archived category to be
+   renamed first.
+6. Verify both `Uncategorised` fallbacks have disabled lifecycle controls and
+   remain unchanged.
+7. Restart the application and verify the restored category remains active.
 
 ### Restart persistence
 

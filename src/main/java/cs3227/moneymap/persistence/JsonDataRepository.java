@@ -147,7 +147,7 @@ public final class JsonDataRepository implements DataRepository {
     private static PersistedState toPersistedState(ApplicationState state) {
         List<PersistedCategory> categories = state.categories().stream()
                 .map(category -> new PersistedCategory(category.id().toString(), category.type().name(),
-                        category.name(), category.permanentFallback()))
+                        category.name(), category.permanentFallback(), category.archived()))
                 .toList();
         List<PersistedTransaction> transactions = state.transactions().stream()
                 .map(transaction -> new PersistedTransaction(transaction.id().toString(), transaction.type().name(),
@@ -171,7 +171,7 @@ public final class JsonDataRepository implements DataRepository {
         for (PersistedCategory item : persisted.categories()) {
             Objects.requireNonNull(item, "Saved category cannot be null.");
             Category category = new Category(UUID.fromString(item.id()), TransactionType.valueOf(item.type()),
-                    item.name(), item.permanentFallback());
+                    item.name(), item.permanentFallback(), item.archived());
             if (categoriesById.put(category.id(), category) != null) {
                 throw new IllegalArgumentException("Duplicate saved category ID.");
             }
@@ -212,7 +212,7 @@ public final class JsonDataRepository implements DataRepository {
                                   List<PersistedTransaction> transactions) {
     }
 
-    private record PersistedCategory(String id, String type, String name, boolean permanentFallback) {
+    private record PersistedCategory(String id, String type, String name, boolean permanentFallback, boolean archived) {
     }
 
     private record PersistedTransaction(String id, String type, String amount, String date,

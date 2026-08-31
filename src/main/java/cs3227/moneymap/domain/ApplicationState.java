@@ -56,4 +56,74 @@ public record ApplicationState(List<Category> categories, List<Transaction> tran
         updated.add(category);
         return new ApplicationState(updated, transactions);
     }
+
+    /** Returns a new state with one ordinary category renamed.
+     *
+     * @param category category to rename
+     * @param name replacement display name
+     * @return updated immutable state
+     */
+    public ApplicationState withRenamedCategory(Category category, String name) {
+        Objects.requireNonNull(category, "Category is required");
+        List<Category> updated = categories.stream()
+                .map(candidate -> candidate.id().equals(category.id())
+                        ? new Category(candidate.id(), candidate.type(), name, candidate.permanentFallback(),
+                                candidate.archived())
+                        : candidate)
+                .toList();
+        Category replacement = updated.stream()
+                .filter(candidate -> candidate.id().equals(category.id()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Category does not exist."));
+        return new ApplicationState(updated, replaceCategoryReferences(replacement));
+    }
+
+    /** Returns a new state with one ordinary category archived.
+     *
+     * @param category category to archive
+     * @return updated immutable state
+     */
+    public ApplicationState withArchivedCategory(Category category) {
+        Objects.requireNonNull(category, "Category is required");
+        List<Category> updated = categories.stream()
+                .map(candidate -> candidate.id().equals(category.id())
+                        ? new Category(candidate.id(), candidate.type(), candidate.name(),
+                                candidate.permanentFallback(), true)
+                        : candidate)
+                .toList();
+        Category replacement = updated.stream()
+                .filter(candidate -> candidate.id().equals(category.id()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Category does not exist."));
+        return new ApplicationState(updated, replaceCategoryReferences(replacement));
+    }
+
+    /** Returns a new state with one ordinary category restored to active use.
+     *
+     * @param category category to restore
+     * @return updated immutable state
+     */
+    public ApplicationState withRestoredCategory(Category category) {
+        Objects.requireNonNull(category, "Category is required");
+        List<Category> updated = categories.stream()
+                .map(candidate -> candidate.id().equals(category.id())
+                        ? new Category(candidate.id(), candidate.type(), candidate.name(),
+                                candidate.permanentFallback(), false)
+                        : candidate)
+                .toList();
+        Category replacement = updated.stream()
+                .filter(candidate -> candidate.id().equals(category.id()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Category does not exist."));
+        return new ApplicationState(updated, replaceCategoryReferences(replacement));
+    }
+
+    private List<Transaction> replaceCategoryReferences(Category replacement) {
+        return transactions.stream()
+                .map(transaction -> transaction.category().id().equals(replacement.id())
+                        ? new Transaction(transaction.id(), transaction.type(), transaction.amount(),
+                                transaction.date(), replacement, transaction.note())
+                        : transaction)
+                .toList();
+    }
 }

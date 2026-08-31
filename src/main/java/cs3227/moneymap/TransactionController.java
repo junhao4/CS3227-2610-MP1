@@ -143,7 +143,8 @@ public final class TransactionController {
     /** Returns all categories in a predictable order for the history filter. */
     private List<Category> allCategories() {
         return List.of(TransactionType.values()).stream()
-                .flatMap(type -> service.categoriesFor(type).stream())
+                .flatMap(type -> service.allCategories().stream()
+                        .filter(category -> category.type() == type))
                 .sorted(Comparator.comparing(Category::name))
                 .toList();
     }

@@ -6,13 +6,18 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
 <ScrollPane fx:id="categoryScrollPane" id="categoriesAndBudgetsView" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" xmlns="http://javafx.com/javafx/17.0.0" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs3227.moneymap.CategoryController">
     <content>
         <VBox spacing="14" styleClass="page">
             <padding><Insets top="42" right="48" bottom="42" left="48" /></padding>
             <Label text="Categories and Budgets" styleClass="page-title" />
             <Label text="Organise transactions and set monthly spending limits here." styleClass="muted" />
-            <VBox spacing="14" styleClass="panel category-panel">
+            <HBox spacing="8">
+                <Button fx:id="activeCategoriesButton" id="activeCategoriesButton" text="Active categories" onAction="#showActiveCategories" accessibleText="Show active categories" />
+                <Button fx:id="archivedCategoriesButton" id="archivedCategoriesButton" text="View archived categories" onAction="#showArchivedCategories" accessibleText="Show archived categories" />
+            </HBox>
+            <VBox fx:id="categoryCreationPanel" id="categoryCreationPanel" spacing="14" styleClass="panel category-panel">
                 <Label text="Create a category" styleClass="section-title" />
                 <Label text="Categories are specific to Income or Expense." styleClass="muted" />
                 <ComboBox fx:id="categoryTypeComboBox" id="categoryTypeComboBox" promptText="Type" accessibleText="Category type" maxWidth="Infinity" />
@@ -21,7 +26,7 @@
                 <Label fx:id="categoryValidationLabel" id="categoryValidationLabel" managed="false" visible="false" wrapText="true" styleClass="validation-error" />
             </VBox>
             <VBox spacing="8" styleClass="panel category-panel">
-                <Label text="Current categories" styleClass="section-title" />
+                <Label fx:id="categoryListTitle" id="categoryListTitle" text="Current categories" styleClass="section-title" />
                 <VBox fx:id="categoryRows" id="categoryRows" spacing="4" />
             </VBox>
         </VBox>
