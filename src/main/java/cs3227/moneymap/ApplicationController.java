@@ -50,6 +50,9 @@ public class ApplicationController {
     private void loadView(String resource) {
         try {
             FXMLLoader loader = new FXMLLoader(Objects.requireNonNull(getClass().getResource(resource)));
+            if ("/moneymap/dashboard.fxml".equals(resource)) {
+                loader.setControllerFactory(type -> new DashboardController(transactionService));
+            }
             if ("/moneymap/transactions.fxml".equals(resource)) {
                 loader.setControllerFactory(type -> new TransactionController(transactionService));
             }

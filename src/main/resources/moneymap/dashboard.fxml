@@ -1,13 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<VBox id="dashboardView" spacing="14" styleClass="page" xmlns="http://javafx.com/javafx/17.0.7" xmlns:fx="http://javafx.com/fxml/1">
-    <padding><Insets top="42" right="48" bottom="42" left="48" /></padding>
-    <Label text="Dashboard" styleClass="page-title" />
-    <Label text="Your monthly summary will appear here once you record transactions." styleClass="muted" wrapText="true" />
-    <VBox spacing="8" styleClass="empty-panel">
-        <Label text="No transactions yet" styleClass="section-title" />
-        <Label text="Start by adding an income or expense in Transactions. MoneyMap will show your balance, category spending, and budget status here." styleClass="muted" wrapText="true" />
-    </VBox>
-</VBox>
+<ScrollPane id="dashboardView" fitToWidth="true" hbarPolicy="NEVER" styleClass="dashboard-scroll"
+            xmlns="http://javafx.com/javafx/17.0.7" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="cs3227.moneymap.DashboardController">
+    <content>
+        <VBox spacing="18" fillWidth="true" styleClass="page dashboard-page">
+    <padding><Insets top="34" right="42" bottom="34" left="42" /></padding>
+            <HBox alignment="CENTER_LEFT" spacing="14">
+                <VBox HBox.hgrow="ALWAYS" spacing="4">
+                    <Label fx:id="dashboardTitle" text="August at a glance" styleClass="page-title" />
+                    <Label text="A visual check-in on where your money is going." styleClass="muted" />
+                </VBox>
+                <ComboBox fx:id="monthSelector" prefWidth="160" accessibleText="Dashboard month" />
+            </HBox>
+            <VBox styleClass="hero-card" spacing="8">
+                <Label fx:id="heroTitle" styleClass="hero-title" />
+                <Label fx:id="heroSubtitle" styleClass="hero-subtitle" wrapText="true" />
+                <ProgressBar fx:id="heroProgress" maxWidth="Infinity" progress="0" styleClass="hero-progress" />
+            </VBox>
+    <GridPane hgap="18" vgap="18" styleClass="dashboard-columns">
+        <columnConstraints>
+            <ColumnConstraints percentWidth="70" hgrow="ALWAYS" />
+            <ColumnConstraints percentWidth="30" minWidth="190" hgrow="SOMETIMES" />
+        </columnConstraints>
+        <VBox GridPane.columnIndex="0" styleClass="panel chart-panel" spacing="10">
+            <Label text="Budget vs spending" styleClass="section-title" />
+            <VBox fx:id="budgetRows" spacing="8" />
+        </VBox>
+                <VBox fx:id="quickTotalsCard" GridPane.columnIndex="1" minWidth="190" maxWidth="Infinity"
+                      spacing="8" styleClass="category-card quick-totals">
+            <Label text="Quick totals" styleClass="section-title" />
+            <Label text="Income" styleClass="card-label" />
+            <Label fx:id="incomeTotal" styleClass="metric-value small" />
+            <Label text="Expenses" styleClass="card-label" />
+            <Label fx:id="expenseTotal" styleClass="metric-value small" />
+            <Label text="Planned budget" styleClass="card-label" />
+            <Label fx:id="plannedTotal" styleClass="metric-value small" />
+            <Label text="Net balance" styleClass="card-label" />
+            <Label fx:id="netTotal" styleClass="positive metric-value small" />
+        </VBox>
+    </GridPane>
+            <VBox spacing="10" styleClass="category-card">
+                <Label text="Recent activity" styleClass="section-title" />
+                <VBox fx:id="recentRows" spacing="0" />
+            </VBox>
+        </VBox>
+    </content>
+</ScrollPane>

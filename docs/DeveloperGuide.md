@@ -33,6 +33,7 @@ executables:
   scroll container, active/archived-view switching, rename/archive/restore
   management-dialog progressive disclosure, reassignment/deletion confirmation
   flows, fallback protection, recurring and month-only budget saving,
+  month-stepper navigation and current-month defaulting,
   explicit-zero and invalid-amount feedback, budget removal and scope
   preservation, stable category-card sizing and progress visibility,
   blocked-deletion feedback, archived-category filtering, and reload.
@@ -235,37 +236,47 @@ archived categories from new transaction selection. History filters use
 ### Monthly budget flow
 
 The Categories and Budgets landing view keeps category creation and lifecycle
-controls visible as a responsive card grid, exposing a single **Manage budgets**
-action. That action
-swaps to a focused budget view. Its **View budgets for** picker changes only
-the month used to render the card-based effective-budget entries. When a
-month-only value takes precedence over an every-month value, the card displays
-both: the effective amount on the main line and the every-month amount beneath
-it. This makes the precedence visible rather than hiding the saved default.
+controls visible as a responsive card grid. An Expense card's **Manage** action
+opens the existing category-management dialog; choosing **Set budget** or
+**Edit budget** then opens the existing full-screen budget manager with the
+selected category's detail editor and the all-category list hidden. The
+editor's labelled month stepper defaults to the service clock's current month
+and controls the effective-budget context. **← Back to categories** is the
+editor's only exit; there is no redundant editor Close action.
 
-A row's **Manage** or **Set budget** action then reveals a category-specific
-detail panel. The panel first displays the every-month and selected-month
+The panel displays the recurring-from-this-month-onward and selected-month
 values independently. Its **Set** or **Change** actions reveal only the plain
-amount input for the value the user chose; the category and month are already
-fixed by the preceding view. `TransactionService.recurringBudgetFor` and
+amount input for the value the user chose; the category and month are fixed by
+the focused editor context. `TransactionService.recurringBudgetFor` and
 `monthOnlyBudgetFor` support this presentation without exposing mutable state.
-When a value exists, the detail panel also exposes **Remove** for that scope.
-Removing a month-only value leaves the recurring scope intact, while removing
-the recurring value leaves any month-only override intact. The category landing
-cards use a fixed expense-card height so an over-budget message cannot displace
-the progress bar; income cards use a shorter fixed height because they have no
-budget progress content. Manage remains bottom-aligned and bold within each
-card.
+When a value exists, the editor also exposes **Remove** for that scope. The
+editor also exposes recurring removal when the selected month has no active
+value but an active recurring version is scheduled later, because removal
+covers that later version from the selected month onward. Removing a month-only
+value leaves the recurring scope intact. Removing a recurring value creates a
+stop marker from the selected month onward, removes later active versions, and
+retains earlier recurring history.
+After a save or removal, `CategoryController.showCategories()` re-renders the
+category cards before returning to the landing view, so the displayed budget
+state is not stale. Card monetary summaries use a fixed-width label with
+ellipsis overrun; this contains very large valid amounts without imposing a
+new monetary cap. The focused editor remains the place to inspect the full
+amount.
 The service rejects Income categories and uses `MoneyAmount` validation, then
-constructs an immutable `Budget` whose identity is the category UUID and
-either a recurring scope or `YearMonth` override. `ApplicationState.withBudget`
-replaces entries only within the same scope. `budgetFor` resolves a matching
-month-only value before the recurring default, so there is at most one
-effective budget per category/month. As for transactions and category changes,
-the service saves the candidate state before publishing it.
+constructs an immutable `Budget` whose identity is the category UUID and either
+a recurring version with an effective `YearMonth` or a `YearMonth` override.
+`ApplicationState.withRecurringBudget` replaces recurring versions from the
+selected month onward; `budgetFor` resolves a matching month-only value before
+the latest recurring version effective for the selected month. Inactive
+recurring stop markers represent the absence of a budget from their effective
+month onward. Thus there is at most one effective budget per category/month.
+As for transactions and category changes, the service saves the candidate state
+before publishing it.
 
 `spendingFor`, `percentageUsed`, and `isOverBudget` provide the calculation
-rules needed by the later Dashboard without introducing Dashboard UI early.
+rules used by the Dashboard budget rows. `DashboardController` derives the
+selected-month income, expenses, net balance, budget states, and three most
+recent transactions from the service without changing persistence boundaries.
 They include all matching Expense transactions even when no budget exists;
 overspending is never a transaction-validation error. Percentage is absent for
 an unset or explicit-zero budget, while a zero budget is over budget as soon
@@ -280,7 +291,7 @@ negative-form input, excessive precision, currency symbols, grouping commas,
 scientific notation, `.50`, and `1.`. `Transaction` additionally rejects a
 value above `9999999.99`; this is a transaction-recording bound, rather than a
 general `MoneyAmount` bound, so monthly budgets retain their existing monetary
-validation. Display formatting is centralized and uses the fixed `S$` prefix
+validation. Display formatting is centralized and uses the fixed `$` prefix
 with grouping and two decimal places.
 
 Transaction dates are required. The form defaults to `LocalDate.now(clock)`;
@@ -299,13 +310,16 @@ would clash with an active category of the same type. Permanent fallbacks cannot
 be renamed, archived, or restored.
 
 `Budget` applies only to an Expense category. It represents either a recurring
-monthly default or a fixed `YearMonth` one-time budget. The state rejects dangling
-budget categories, Income-category budgets, and duplicate entries within the
-same category/scope. A missing budget and an explicit zero budget are separate
-states. The service computes exact SGD spending with `BigDecimal`, permits
-spending beyond the limit, and intentionally returns no percentage for an unset
-or zero budget. Dashboard budget status and presentation remain a later
-increment.
+monthly version (optionally with an effective start `YearMonth`) or a fixed
+`YearMonth` one-time budget. A recurring version may also be an inactive stop
+marker. The state rejects dangling budget categories, Income-category budgets,
+and duplicate entries within the same category/scope. A missing budget and an
+explicit zero budget are separate states. The service computes exact SGD
+spending with `BigDecimal`, permits spending beyond the limit, and intentionally
+returns no percentage for an unset or zero budget. The Dashboard presents these
+states using the approved B-style hero, budget rows, quick totals, and
+three-item recent activity; its month ComboBox defaults to the service clock’s
+current month and refreshes together.
 
 Custom category creation, lifecycle management, transaction-history filtering,
 and monthly budget configuration are implemented.
@@ -316,11 +330,13 @@ and monthly budget configuration are implemented.
 contains the current application state: starter and custom categories,
 transactions, and monthly budgets, including stable IDs, types, exact amount
 strings, ISO dates, category references, fallback flags, archived state, notes,
-and budget category references, optional ISO months, recurrence flags, and
-exact amount strings. The schema version remains compatible with older category
-records because a missing archived flag loads as false, with pre-budget
-documents because a missing budget list loads as empty, and with prior
-month-only budget records because a missing recurrence flag loads as false.
+and budget category references, optional ISO months, recurrence flags, activity
+flags, and exact amount strings. The schema version remains compatible with
+older category records because a missing archived flag loads as false, with
+pre-budget documents because a missing budget list loads as empty, and with
+prior month-only budget records because a missing recurrence flag loads as
+false. A missing recurring-version activity flag loads as active, preserving
+legacy recurring baselines.
 
 On first launch with neither a main nor temporary file, the repository returns
 the fixed starter categories and an empty transaction list without creating a
@@ -391,11 +407,14 @@ action menu, type-aware editing, maximum-amount feedback, and both standard
 deletion outcomes before reloading the resulting JSON state.
 `CategoryUiSmokeTest` checks
 custom-category creation, validation, type scoping, active/archived switching,
-restore controls, archived-category exclusion from new transactions, recurring
-  default and month-only budget configuration, removal of each budget scope,
-  preservation of the other scope, stable category-card heights, visible
-  over-budget progress, the visible monthly-default line when a one-time
-  amount applies, and reload. These checks do not replace manual
+restore controls, archived-category exclusion from new transactions,
+month-stepper navigation, recurring default and month-only budget
+configuration, removal of each budget scope,
+preservation of the other scope, removal visibility after a recurring stop,
+back-navigation refresh, large-amount card containment, stable
+category-card heights, visible over-budget progress, the visible
+monthly-default line when a one-time amount applies, and reload. These checks
+do not replace manual
 inspection: JavaFX resource lookup and focus-owner assertions cannot prove the
 rendered layout is visually correct on every platform.
 
@@ -433,7 +452,7 @@ Use a disposable directory so the test cannot alter personal data.
    Income styling.
 3. Save `9999999.99`, then try `10000000`; confirm the former saves and the
    latter is rejected with feedback naming the maximum.
-4. Try `-0.01`, `-0.00`, `1.234`, `S$1.00`, `1,000.00`, `.50`, `1.`, and blank
+4. Try `-0.01`, `-0.00`, `1.234`, `$1.00`, `1,000.00`, `.50`, `1.`, and blank
    input. Confirm each is rejected with text feedback and creates no row.
 5. Save transactions dated in the past, today, and the future.
 6. Save one transaction with an empty note and one with a 200-character note.
@@ -539,29 +558,32 @@ Use a disposable directory so the test cannot alter personal data.
 ### Configure monthly expense budgets
 
 1. Open **Categories and Budgets** and confirm category creation and lifecycle
-   controls are visible while the budget view is hidden.
-2. Select **Manage budgets**. Confirm a labelled **View budgets for** picker,
-   table-like effective-budget rows, and **← Back to categories** are visible.
-3. Select Food's **Set budget**, then **Set** beside **Every month**, enter
-   `0`, and save. Confirm the row shows `S$0.00 · Every month`.
-4. Select Food's **Manage**, then **Set** beside the viewed month, and save
-   `100.00`. Confirm the viewing month shows `S$100.00 · This month only` and
-   a second line, `Monthly budget: S$0.00 every month`. Select the next month
-   and confirm it shows `S$0.00 · Every month`.
-5. Return to the original month and select **Remove** beside the one-time
-   budget. Confirm the recurring `S$0.00` value becomes the applied budget and
-   the one-time value's **Remove** action disappears. Remove the recurring
-   value as well and confirm the category has no budget; save the two values
-   again for the remaining checks.
+   controls are visible.
+2. Select Food's **Manage**, then **Set budget**. Confirm the full-screen
+   budget manager opens for Food with the all-category list hidden. Confirm the
+   labelled month stepper defaults to the current month.
+3. Select the recurring-budget **Set** action, enter `300.00`, and save. Move
+   the month forward, change it to `500.00`, and save. Return to the earlier
+   month and confirm it still shows `300.00`; later months show `500.00`.
+4. Select **Set** beside the one-time override, enter `100.00`, and save.
+   Change the month and confirm the recurring value remains unchanged. Remove
+   each scope separately and confirm the effective value updates.
+5. Create a recurring value starting in a future month, move the editor back
+   to an earlier month, and confirm **Remove** is available. Remove it and
+   verify the **Remove** action disappears, the future month no longer has a
+   recurring budget, and any earlier budget remains unchanged.
 6. Try blank, negative, and three-decimal values. Confirm each gives text
    feedback and leaves the previous saved budget unchanged.
-7. Confirm Income categories are not offered. Save Expense transactions after
-   setting both a normal and zero budget; neither transaction should be
+7. Confirm Income cards do not offer budget actions. Save Expense transactions
+   after setting both a normal and zero budget; neither transaction should be
    blocked.
-8. On the category landing view, confirm expense cards have a consistent
-   height, over-budget cards retain their progress bars, Manage is bold and
-   bottom-aligned, and income cards are more compact. Restart MoneyMap and confirm both the recurring default and the selected
-   month's one-time budget remain listed.
+8. Select **← Back to categories** and confirm it returns to the category
+   cards with the changed budget state visible immediately. Confirm expense
+   cards retain their progress bars while income cards remain compact. Enter a
+   very large valid budget and confirm the card remains within its fixed layout
+   (a long summary may show an ellipsis); open the focused editor to inspect the
+   complete value. Restart MoneyMap and confirm the recurring versions and
+   month-only budget remain persisted.
 
 ### Restart persistence
 
@@ -606,8 +628,11 @@ Perform this only in the disposable test directory.
    Windows and Linux.
 3. Confirm Add moves focus into the focused form and Cancel or **← Back to
    transactions** returns focus to Add.
-4. Resize the window to its minimum and confirm the list, form, and navigation
-   remain reachable and usable.
+4. Open an Expense budget editor and use Tab to reach both month arrows and
+   **← Back to categories**. Confirm the arrows have visible focus and move the
+   selected month by one month per activation.
+5. Resize the window to its minimum and confirm the list, form, budget editor,
+   and navigation remain reachable and usable.
 
 Automated tests support the functional expectations above. The Issue #3
 keyboard workflow was manually confirmed on macOS. Rendered appearance, focus

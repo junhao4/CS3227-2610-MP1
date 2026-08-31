@@ -10,10 +10,10 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
 import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TextField;
@@ -53,8 +53,6 @@ public final class CategoryController {
     private VBox budgetEditorPanel;
     @FXML
     private Label budgetEditorTitle;
-    @FXML
-    private DatePicker viewBudgetMonthPicker;
     @FXML
     private TextField budgetAmountField;
     @FXML
@@ -100,6 +98,13 @@ public final class CategoryController {
     private boolean showingArchived;
     private Category selectedBudgetCategory;
     private boolean editingRecurringBudget;
+    private YearMonth budgetEditorMonth;
+    @FXML
+    private Button previousBudgetMonthButton;
+    @FXML
+    private Button nextBudgetMonthButton;
+    @FXML
+    private Label budgetMonthValueLabel;
 
     CategoryController(TransactionService service) {
         this.service = Objects.requireNonNull(service);
@@ -110,14 +115,8 @@ public final class CategoryController {
         categoryTypeComboBox.setItems(FXCollections.observableArrayList(TransactionType.values()));
         categoryTypeComboBox.setConverter(new TransactionTypeConverter());
         categoryTypeComboBox.setValue(TransactionType.EXPENSE);
-        viewBudgetMonthPicker.setValue(service.defaultDate().withDayOfMonth(1));
-        viewBudgetMonthPicker.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (selectedBudgetCategory == null) {
-                renderBudgets();
-            } else {
-                showBudgetEditor(selectedBudgetCategory);
-            }
-        });
+        budgetEditorMonth = YearMonth.from(service.defaultDate());
+        updateBudgetMonthLabel();
         showActiveCategories();
     }
 
@@ -211,6 +210,8 @@ public final class CategoryController {
         budgetListPanel.setManaged(true);
         budgetListPanel.setVisible(true);
         selectedBudgetCategory = null;
+        budgetEditorMonth = YearMonth.from(service.defaultDate());
+        updateBudgetMonthLabel();
         renderBudgets();
     }
 
@@ -223,10 +224,12 @@ public final class CategoryController {
         budgetListPanel.setManaged(false);
         budgetListPanel.setVisible(false);
         selectedBudgetCategory = category;
+        budgetEditorMonth = YearMonth.from(service.defaultDate());
+        updateBudgetMonthLabel();
         showBudgetEditor(category);
     }
 
-    /** Returns from budget management to the category-focused landing view. */
+    /** Returns to the category landing view after closing the contextual editor. */
     @FXML
     private void showCategories() {
         categoryLandingView.setManaged(true);
@@ -236,6 +239,7 @@ public final class CategoryController {
         budgetListPanel.setManaged(true);
         budgetListPanel.setVisible(true);
         hideBudgetEditor();
+        renderCategories();
     }
 
     @FXML
@@ -275,23 +279,25 @@ public final class CategoryController {
 
     /** Refreshes effective budget rows for the month explicitly chosen for viewing. */
     private void renderBudgets() {
-        if (budgetRows == null || viewBudgetMonthPicker.getValue() == null) {
+        if (budgetRows == null || budgetEditorMonth == null) {
             return;
         }
         budgetRows.getChildren().clear();
-        YearMonth month = YearMonth.from(viewBudgetMonthPicker.getValue());
+        YearMonth month = budgetEditorMonth;
         budgetListTitle.setText("Budgets for " + displayMonth(month));
         for (Category category : service.categoriesFor(TransactionType.EXPENSE).stream()
                 .sorted(Comparator.comparing(Category::name, String.CASE_INSENSITIVE_ORDER)).toList()) {
             Budget budget = service.budgetFor(category.id(), month).orElse(null);
-            Budget recurring = service.recurringBudgetFor(category.id()).orElse(null);
+            Budget recurring = service.recurringBudgetFor(category.id(), month).orElse(null);
             Label name = new Label(category.name());
             name.getStyleClass().add("section-title");
             Label spent = new Label("Spent in " + displayMonth(month) + ": "
                     + cardMoney(service.spendingFor(category.id(), month)));
+            constrainCardLabel(spent);
             spent.getStyleClass().add("metric-value");
             Label amount = new Label(budget == null ? "No budget set for " + displayMonth(month)
                     : "Applied budget for " + displayMonth(month) + ": " + cardMoney(budget.amount()));
+            constrainCardLabel(amount);
             amount.getStyleClass().add(budget == null ? "muted" : "row-label");
             Button manage = new Button(budget == null ? "Set budget" : "Manage");
             manage.getStyleClass().add("text-button");
@@ -302,6 +308,7 @@ public final class CategoryController {
             row.getChildren().addAll(spacer, manage);
             row.getStyleClass().add("budget-table-row");
             Label status = new Label(budgetStatus(category, month, budget));
+            constrainCardLabel(status);
             status.getStyleClass().add(budget == null ? "muted" : service.isOverBudget(category.id(), month)
                     ? "danger" : "positive");
             ProgressBar progress = new ProgressBar(budget == null || budget.amount().value().signum() == 0
@@ -314,6 +321,7 @@ public final class CategoryController {
             if (budget != null && !budget.repeatsMonthly() && recurring != null) {
                 Label monthlyDefault = new Label("Monthly budget: " + SgdFormatter.format(recurring.amount())
                         + " every month");
+                constrainCardLabel(monthlyDefault);
                 monthlyDefault.getStyleClass().add("muted");
                 budgetRow.getChildren().add(monthlyDefault);
             }
@@ -325,7 +333,7 @@ public final class CategoryController {
     private void showBudgetEditor(Category category) {
         selectedBudgetCategory = category;
         YearMonth month = selectedBudgetMonth();
-        Budget recurring = service.recurringBudgetFor(category.id()).orElse(null);
+        Budget recurring = service.recurringBudgetFor(category.id(), month).orElse(null);
         Budget monthOnly = service.monthOnlyBudgetFor(category.id(), month).orElse(null);
         budgetEditorTitle.setText("Manage " + category.name() + " budget");
         budgetDetailMonthLabel.setText("For " + displayMonth(month));
@@ -333,7 +341,8 @@ public final class CategoryController {
         recurringBudgetValueLabel.setText(recurring == null ? "No every-month budget" :
                 SgdFormatter.format(recurring.amount()) + " every month");
         changeRecurringBudgetButton.setText(recurring == null ? "Set" : "Change");
-        setBudgetActionVisibility(removeRecurringBudgetButton, recurring != null);
+        setBudgetActionVisibility(removeRecurringBudgetButton,
+                recurring != null || service.hasRecurringBudgetFrom(category.id(), month));
         monthBudgetLabel.setText("One-time override for " + displayMonth(month));
         monthBudgetValueLabel.setText(monthOnly == null ? "No one-time budget" :
                 SgdFormatter.format(monthOnly.amount()) + " this month only");
@@ -353,6 +362,35 @@ public final class CategoryController {
             budgetDetailPanel.setVisible(false);
         }
         hideBudgetForm();
+    }
+
+    /** Moves the budget view to the previous calendar month. */
+    @FXML
+    private void showPreviousBudgetMonth() {
+        budgetEditorMonth = selectedBudgetMonth().minusMonths(1);
+        updateBudgetMonthLabel();
+        if (selectedBudgetCategory == null) {
+            renderBudgets();
+        } else {
+            showBudgetEditor(selectedBudgetCategory);
+        }
+    }
+
+    /** Moves the budget view to the next calendar month. */
+    @FXML
+    private void showNextBudgetMonth() {
+        budgetEditorMonth = selectedBudgetMonth().plusMonths(1);
+        updateBudgetMonthLabel();
+        if (selectedBudgetCategory == null) {
+            renderBudgets();
+        } else {
+            showBudgetEditor(selectedBudgetCategory);
+        }
+    }
+
+    /** Updates the visible month label after a month navigation action. */
+    private void updateBudgetMonthLabel() {
+        budgetMonthValueLabel.setText(displayMonth(budgetEditorMonth));
     }
 
     /** Reveals a single amount field for the every-month value. */
@@ -385,7 +423,7 @@ public final class CategoryController {
             Category category = Objects.requireNonNull(selectedBudgetCategory, "Select a budget category.");
             YearMonth month = selectedBudgetMonth();
             if (recurring) {
-                service.clearRecurringBudget(category.id());
+                service.clearRecurringBudget(category.id(), month);
             } else {
                 service.clearBudgetOverride(category.id(), month);
             }
@@ -407,7 +445,8 @@ public final class CategoryController {
     /** Shows only the currently requested budget input. */
     private void showBudgetForm(boolean recurring) {
         editingRecurringBudget = recurring;
-        Budget existing = recurring ? service.recurringBudgetFor(selectedBudgetCategory.id()).orElse(null)
+        Budget existing = recurring ? service.recurringBudgetFor(selectedBudgetCategory.id(), selectedBudgetMonth())
+                .orElse(null)
                 : service.monthOnlyBudgetFor(selectedBudgetCategory.id(), selectedBudgetMonth()).orElse(null);
         budgetEditPromptLabel.setText(recurring ? "Every-month amount" :
                 "Amount for " + displayMonth(selectedBudgetMonth()) + " only");
@@ -436,7 +475,7 @@ public final class CategoryController {
         try {
             Category category = Objects.requireNonNull(selectedBudgetCategory, "Select a budget category.");
             Budget budget = editingRecurringBudget
-                    ? service.setRecurringBudget(category.id(), budgetAmountField.getText())
+                    ? service.setRecurringBudget(category.id(), selectedBudgetMonth(), budgetAmountField.getText())
                     : service.setBudgetOverride(category.id(), selectedBudgetMonth(), budgetAmountField.getText());
             budgetAmountField.clear();
             renderBudgets();
@@ -451,7 +490,7 @@ public final class CategoryController {
 
     /** Returns the calendar month currently selected for the focused budget view. */
     private YearMonth selectedBudgetMonth() {
-        return YearMonth.from(Objects.requireNonNull(viewBudgetMonthPicker.getValue(), "Select a month to view."));
+        return Objects.requireNonNull(budgetEditorMonth, "Select a month to view.");
     }
 
     /** Formats a calendar month for a clear user-facing heading. */
@@ -522,17 +561,20 @@ public final class CategoryController {
         java.math.BigDecimal spent = service.spendingFor(category.id(), month).value();
         Budget budget = service.budgetFor(category.id(), month).orElse(null);
             Label spending = new Label(cardMoney(new cs3227.moneymap.domain.MoneyAmount(spent)) + " spent");
+        constrainCardLabel(spending);
         spending.getStyleClass().add("metric-value");
         Label budgetSummary = new Label(budget == null ? "No budget set" : budget.amount().value().signum() == 0
                 ? "$0.00 budget" : "of " + cardMoney(budget.amount()) + " budget · "
                 + cardMoney(new cs3227.moneymap.domain.MoneyAmount(
                 budget.amount().value().subtract(spent).max(java.math.BigDecimal.ZERO))) + " left");
         budgetSummary.setWrapText(true);
+        constrainCardLabel(budgetSummary);
         budgetSummary.getStyleClass().add(budget == null ? "muted" : "positive");
         card.getChildren().addAll(spending, budgetSummary);
         if (budget != null && service.isOverBudget(category.id(), month)) {
             Label over = new Label(cardMoney(new cs3227.moneymap.domain.MoneyAmount(
                     spent.subtract(budget.amount().value()))) + " over budget");
+            constrainCardLabel(over);
             over.getStyleClass().add("danger");
             card.getChildren().add(over);
         }
@@ -551,6 +593,13 @@ public final class CategoryController {
         card.getChildren().add(progress);
     }
 
+    /** Keeps long monetary summaries inside the fixed-width prototype card. */
+    private static void constrainCardLabel(Label label) {
+        label.setWrapText(false);
+        label.setTextOverrun(OverrunStyle.ELLIPSIS);
+        label.setMaxWidth(Double.MAX_VALUE);
+    }
+
     /** Uses the compact dollar notation reserved for the prototype-style cards. */
     private static String cardMoney(cs3227.moneymap.domain.MoneyAmount amount) {
         String formatted = SgdFormatter.format(amount);
@@ -564,9 +613,9 @@ public final class CategoryController {
         }
         java.math.BigDecimal percentage = service.percentageUsed(categoryId, month)
                 .orElse(java.math.BigDecimal.ZERO);
-        return percentage.compareTo(java.math.BigDecimal.valueOf(80)) > 0
-                ? "budget-progress-over" : percentage.compareTo(java.math.BigDecimal.valueOf(50)) > 0
-                ? "budget-progress-warning" : "budget-progress";
+        java.math.BigDecimal ratio = percentage.divide(java.math.BigDecimal.valueOf(100), 4,
+                java.math.RoundingMode.HALF_UP);
+        return BudgetProgress.styleFor(ratio, service.isOverBudget(categoryId, month));
     }
 
     /** Reveals only the management actions that are currently valid for the category. */

@@ -12,7 +12,7 @@ final class SgdFormatter {
     }
 
     static String format(MoneyAmount amount) {
-        DecimalFormat formatter = new DecimalFormat("'S$'#,##0.00",
+        DecimalFormat formatter = new DecimalFormat("'$'#,##0.00",
                 DecimalFormatSymbols.getInstance(Locale.US));
         return formatter.format(amount.value());
     }

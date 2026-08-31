@@ -159,7 +159,7 @@ public final class JsonDataRepository implements DataRepository {
         List<PersistedBudget> budgets = state.budgets().stream()
                 .map(budget -> new PersistedBudget(budget.categoryId().toString(),
                         budget.month() == null ? null : budget.month().toString(), budget.amount().toString(),
-                        budget.repeatsMonthly()))
+                        budget.repeatsMonthly(), budget.active()))
                 .toList();
         return new PersistedState(CURRENT_VERSION, categories, transactions, budgets);
     }
@@ -208,7 +208,7 @@ public final class JsonDataRepository implements DataRepository {
             Objects.requireNonNull(item, "Saved budget cannot be null.");
             budgets.add(new Budget(UUID.fromString(item.categoryId()),
                     item.month() == null ? null : YearMonth.parse(item.month()), MoneyAmount.parse(item.amount()),
-                    item.repeatsMonthly()));
+                    item.repeatsMonthly(), item.active() == null || item.active()));
         }
         return new ApplicationState(categories, transactions, budgets);
     }
@@ -234,6 +234,7 @@ public final class JsonDataRepository implements DataRepository {
                                         String categoryId, String note) {
     }
 
-    private record PersistedBudget(String categoryId, String month, String amount, boolean repeatsMonthly) {
+    private record PersistedBudget(String categoryId, String month, String amount, boolean repeatsMonthly,
+                                   Boolean active) {
     }
 }

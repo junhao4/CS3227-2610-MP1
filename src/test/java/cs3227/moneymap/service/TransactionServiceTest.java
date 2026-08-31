@@ -436,6 +436,67 @@ class TransactionServiceTest {
     }
 
     @Test
+    void setRecurringBudget_versionedChangeLeavesEarlierMonthsUnchanged() {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        YearMonth august = YearMonth.of(2026, 8);
+        YearMonth september = august.plusMonths(1);
+        YearMonth october = september.plusMonths(1);
+
+        service.setRecurringBudget(food.id(), august, "300.00");
+        service.setRecurringBudget(food.id(), september, "500.00");
+
+        assertEquals(MoneyAmount.parse("300.00"), service.budgetFor(food.id(), august).orElseThrow().amount());
+        assertEquals(MoneyAmount.parse("500.00"), service.budgetFor(food.id(), september).orElseThrow().amount());
+        assertEquals(MoneyAmount.parse("500.00"), service.budgetFor(food.id(), october).orElseThrow().amount());
+        assertTrue(service.budgetFor(food.id(), august).orElseThrow().repeatsMonthly());
+    }
+
+    @Test
+    void clearRecurringBudget_versionedStopPreservesEarlierMonths() {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        YearMonth august = YearMonth.of(2026, 8);
+        YearMonth september = august.plusMonths(1);
+        YearMonth october = september.plusMonths(1);
+
+        service.setRecurringBudget(food.id(), "300.00");
+        service.clearRecurringBudget(food.id(), september);
+
+        assertEquals(MoneyAmount.parse("300.00"), service.budgetFor(food.id(), august).orElseThrow().amount());
+        assertTrue(service.budgetFor(food.id(), september).isEmpty());
+        assertTrue(service.budgetFor(food.id(), october).isEmpty());
+        assertTrue(service.budgetsFor(september).isEmpty());
+    }
+
+    @Test
+    void clearRecurringBudget_beforeFutureVersion_removesFutureValue() {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        YearMonth august = YearMonth.of(2026, 8);
+        YearMonth september = august.plusMonths(1);
+        YearMonth october = september.plusMonths(1);
+
+        service.setRecurringBudget(food.id(), september, "500.00");
+        service.clearRecurringBudget(food.id(), august);
+
+        assertTrue(service.budgetFor(food.id(), august).isEmpty());
+        assertTrue(service.budgetFor(food.id(), september).isEmpty());
+        assertTrue(service.budgetFor(food.id(), october).isEmpty());
+    }
+
+    @Test
+    void clearRecurringBudget_baselineStopDoesNotKeepFutureRemovalVisible() {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        YearMonth august = YearMonth.of(2026, 8);
+        YearMonth july = august.minusMonths(1);
+
+        service.setRecurringBudget(food.id(), "300.00");
+        service.clearRecurringBudget(food.id(), august);
+
+        assertTrue(service.hasRecurringBudgetFrom(food.id(), august) == false);
+        assertEquals(MoneyAmount.parse("300.00"), service.budgetFor(food.id(), july).orElseThrow().amount());
+        assertTrue(service.budgetFor(food.id(), august).isEmpty());
+    }
+
+    @Test
     void configuredBudgets_exposeRecurringAndMonthOnlyValuesSeparately() {
         Category food = categoryNamed("Food", TransactionType.EXPENSE);
         YearMonth august = YearMonth.of(2026, 8);

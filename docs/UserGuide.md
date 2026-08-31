@@ -2,8 +2,9 @@
 
 MoneyMap is a local JavaFX desktop application for recording Income and Expense
 transactions in Singapore dollars. The current build provides transaction
-creation, transaction-history review, and automatic local persistence inside
-the production application shell.
+creation, transaction-history review, category management, monthly expense
+budgets, Dashboard summaries, and automatic local persistence inside the
+production application shell.
 
 ## Setup
 
@@ -35,8 +36,8 @@ Windows and Linux remain unverified for this build.
 
 Use the navigation controls on the left to open an area:
 
-- **Dashboard** — placeholder for monthly summaries, category spending, and
-  budget status.
+- **Dashboard** — monthly summary, budget-versus-spending states, and recent
+  activity for a selected month.
 - **Transactions** — records and displays real Income and Expense
   transactions.
 - **Categories and Budgets** — creates, renames, archives, restores,
@@ -53,7 +54,7 @@ a focused control with Space. On Windows and Linux, use Enter or Space.
 2. Select **＋ Add transaction** above **Your transactions**. The ledger is
    replaced by a focused form and keyboard focus moves to **Type**.
 3. Select **Income** or **Expense**.
-4. Enter the amount without `S$` or grouping commas, for example `0`, `12`,
+4. Enter the amount without `$` or grouping commas, for example `0`, `12`,
    `12.3`, or `12.34`.
 5. Keep today's date or select a past or future date.
 6. Optionally select a category. The list contains only categories compatible
@@ -63,8 +64,8 @@ a focused control with Space. On Windows and Linux, use Enter or Space.
 
 After a successful save, the form closes and the transaction appears in the
 list. Income amounts use a plus sign and Expense amounts use a minus sign; both
-are displayed as SGD with exactly two decimal places, for example `+S$600.00`
-and `−S$8.50`.
+are displayed as SGD with exactly two decimal places, for example `+$600.00`
+and `−$8.50`.
 
 Select **Cancel** or **← Back to transactions** to discard the unfinished form
 without saving a transaction and return to the ledger. Your current search and
@@ -117,7 +118,7 @@ remove saved transactions.
 | Field | Accepted input | Invalid input and behavior |
 | --- | --- | --- |
 | Type | Income or Expense | A transaction cannot be saved without a type. |
-| Amount | Zero through `9999999.99`, as a plain decimal beginning with a digit and containing at most two decimal places | Blank, negative, negative-form zero, values greater than `9999999.99`, more than two decimal places, letters, `S$`, commas, scientific notation, `.50`, and `1.` are rejected. |
+| Amount | Zero through `9999999.99`, as a plain decimal beginning with a digit and containing at most two decimal places | Blank, negative, negative-form zero, values greater than `9999999.99`, more than two decimal places, letters, `$`, commas, scientific notation, `.50`, and `1.` are rejected. |
 | Date | A required past, present, or future date; defaults to today | A missing date is rejected. |
 | Category | An optional category matching the selected type | Changing the type clears an incompatible selection. Leaving the field empty uses the matching `Uncategorised` category. |
 | Note | Empty or up to 200 characters | A note longer than 200 characters is rejected. The form displays a live character count. |
@@ -221,39 +222,54 @@ changes are saved automatically and remain after restarting MoneyMap.
 
 ## Set a monthly expense budget
 
-Open **Categories and Budgets**, then select **Manage budgets**. This opens a
-budget-focused view so budget controls do not clutter ordinary category work.
+Open **Categories and Budgets** and select **Manage** on an Expense category.
+Choose **Set budget** or **Edit budget** in the category's management dialog.
+MoneyMap opens a full-screen editor for that one category; the all-category
+budget list is not shown in this focused flow. Income categories do not offer
+budget controls.
 
-1. Use **View budgets for** to choose the calendar month to inspect. This
-   changes only the displayed list; the day does not matter.
-2. Each category card shows spending and the amount that applies in that
-   month. If a one-time amount takes priority over an every-month amount, the
-   card also shows the every-month amount below it.
-3. Select **Manage** beside an existing budget, or **Set budget** for a
-   category with no budget. Income categories are not offered.
-4. The category detail shows two saved values separately: **Every month** and
-   the selected month only. Select **Set** or **Change** beside exactly the
-   value you want to update. A saved value also has a **Remove** action.
-5. Enter a plain SGD amount, such as `0`, `50`, or `250.00`, without `S$` or
-   grouping commas, then select **Save budget**. Use **← Back to categories**
-   when you are done.
+1. Use the labelled **Month** controls to move one calendar month backward or
+   forward. The selected month defaults to the current month.
+2. The editor shows the effective budget for that month and keeps the
+   **Recurring from this month onward** and **one-time override** values
+   separate.
+3. Select **Set** or **Change** beside exactly the value you want to update.
+   A saved value also has a **Remove** action. If a recurring value is scheduled
+   for a later month, **Remove** is also available while viewing an earlier
+   month, so you can clear that later value from the selected month onward.
+   After removal, that scope's **Remove** action disappears. Select
+   **← Back to categories** to leave the editor; the category cards are
+   refreshed immediately to show the saved or removed budget.
+4. Enter a plain SGD amount, such as `0`, `50`, or `250.00`, without `$` or
+   grouping commas, then select **Save budget**.
 
-An every-month amount applies until you change it. An amount saved for one
-month takes priority for that month only, without changing the every-month
-amount. The category detail keeps both values visible so this relationship is
-clear before you edit either one. Select **Remove** beside an every-month value
-or a selected-month value to delete only that budget scope. Removing a
-month-only override reveals the recurring value again when one is configured.
+A recurring amount applies from the selected month onward until a later
+recurring version is set or it is removed. Changing it does not rewrite earlier
+months, so past Dashboard reports retain their previous budget value. An amount
+saved for one month takes priority for that month only, without changing the
+recurring amount. The category detail keeps both values visible so this
+relationship is clear before you edit either one. Select **Remove** beside a
+recurring value to stop it from the selected month onward, or beside a
+selected-month value to delete only that budget scope. Removing a month-only
+override reveals the recurring value again when one is configured.
+
+Long valid amounts remain supported without changing the card layout. A card
+may shorten an unusually long summary with an ellipsis; open that category's
+focused editor to inspect or change the complete amount.
 
 Leaving a category without either kind of saved entry means it has no budget.
-An explicit `S$0.00` budget is different: it permits no spending, but MoneyMap
+An explicit `$0.00` budget is different: it permits no spending, but MoneyMap
 still lets you record expense transactions. A blank, negative, or
 more-than-two-decimal amount is rejected with visible feedback and does not
 change the saved budget.
 
 Budgets are saved automatically and remain available after restarting
 MoneyMap. Category and budget cards show the available spending progress and
-over-budget state; the Dashboard budget presentation is not shown yet.
+over-budget state. The Dashboard presents the selected month’s income,
+expenses, net balance, budget states, and up to three recent transactions.
+
+On Dashboard, use the month dropdown to switch reporting months. It defaults
+to the current month; changing it refreshes all summaries and activity together.
 
 ## Automatic local persistence
 
@@ -297,6 +313,8 @@ restore are not available yet.
   focus to **Type**.
 - **Cancel** or **← Back to transactions** discards the form without saving and
   returns focus to **＋ Add transaction**.
+- The budget editor's month arrows have accessible previous- and next-month
+  labels, and **← Back to categories** returns from the focused budget screen.
 - Validation is communicated with text, not colour alone.
 - On macOS, use Space to activate a focused ordinary button. On Windows and
   Linux, use Enter or Space. **Save transaction** is the form's default action.
@@ -309,14 +327,13 @@ interaction still require manual checking on those target platforms.
 ## Current scope and limitations
 
 The current build supports recording, reviewing, filtering, and searching
-displayed Income and Expense transactions. It does not yet support:
+Income and Expense transactions, managing categories, configuring monthly
+Expense budgets, Dashboard summaries, and local persistence. It does not yet
+support:
 
-- editing or deleting transactions;
-- Dashboard calculations or budget-status presentation;
 - import or export;
 - wallets, transfers, accounts, bank synchronisation, or specialised
   investment, loan, or credit-card behavior; or
 - cloud synchronisation, authentication, or multi-currency values.
 
-The three non-Transactions areas remain honest placeholders for later
-increments.
+Data and Settings remains a placeholder for a later increment.

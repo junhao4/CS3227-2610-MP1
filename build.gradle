@@ -93,6 +93,13 @@ tasks.register('verifyApplication', JavaExec) {
     mainClass = 'cs3227.moneymap.ApplicationSmokeTest'
 }
 
+tasks.register('verifyDashboardUi', JavaExec) {
+    group = 'verification'
+    description = 'Verifies Dashboard summaries, budget states, month refresh, and layout safeguards.'
+    classpath = sourceSets.smoke.runtimeClasspath
+    mainClass = 'cs3227.moneymap.DashboardUiSmokeTest'
+}
+
 tasks.register('verifyTransactionUi', JavaExec) {
     group = 'verification'
     description = 'Verifies transaction creation, validation, fallback assignment, and reload in JavaFX.'
@@ -113,6 +120,7 @@ tasks.named('check') {
     dependsOn tasks.named('checkstyleSmoke')
     dependsOn tasks.named('checkstylePrototype')
     dependsOn tasks.named('verifyApplication')
+    dependsOn tasks.named('verifyDashboardUi')
     dependsOn tasks.named('verifyTransactionUi')
     dependsOn tasks.named('verifyCategoryUi')
 }

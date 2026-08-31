@@ -237,6 +237,28 @@ public record ApplicationState(List<Category> categories, List<Transaction> tran
         return new ApplicationState(categories, transactions, updated);
     }
 
+    /** Replaces recurring versions from an effective month onward with the supplied value.
+     *
+     * @param budget active recurring budget to store
+     * @param effectiveFrom first month receiving the supplied value
+     * @return state containing the replacement recurring value
+     */
+    public ApplicationState withRecurringBudget(Budget budget, YearMonth effectiveFrom) {
+        Objects.requireNonNull(budget, "Budget is required");
+        Objects.requireNonNull(effectiveFrom, "Recurring budget start month is required.");
+        if (!budget.repeatsMonthly()) {
+            throw new IllegalArgumentException("Only recurring budgets can be versioned.");
+        }
+        List<Budget> updated = new ArrayList<>(budgets.stream()
+                .filter(existing -> !(existing.repeatsMonthly()
+                        && existing.categoryId().equals(budget.categoryId())
+                        && existing.month() != null
+                        && !existing.month().isBefore(effectiveFrom)))
+                .toList());
+        updated.add(budget);
+        return new ApplicationState(categories, transactions, updated);
+    }
+
     /**
      * Returns a new state with one budget scope removed.
      *
@@ -247,9 +269,6 @@ public record ApplicationState(List<Category> categories, List<Transaction> tran
      */
     public ApplicationState withoutBudget(java.util.UUID categoryId, YearMonth month, boolean repeatsMonthly) {
         Objects.requireNonNull(categoryId, "Budget category is required");
-        if (repeatsMonthly && month != null) {
-            throw new IllegalArgumentException("Recurring budgets do not use a calendar month.");
-        }
         if (!repeatsMonthly && month == null) {
             throw new IllegalArgumentException("One-month budgets require a calendar month.");
         }
@@ -258,6 +277,37 @@ public record ApplicationState(List<Category> categories, List<Transaction> tran
                         && budget.repeatsMonthly() == repeatsMonthly
                         && Objects.equals(budget.month(), month)))
                 .toList();
+        return new ApplicationState(categories, transactions, updated);
+    }
+
+    /** Removes every recurring version for one category.
+     *
+     * @param categoryId identity of the budgeted category
+     * @return state without recurring values for the category
+     */
+    public ApplicationState withoutRecurringBudgets(java.util.UUID categoryId) {
+        Objects.requireNonNull(categoryId, "Budget category is required");
+        return new ApplicationState(categories, transactions, budgets.stream()
+                .filter(budget -> !(budget.repeatsMonthly() && budget.categoryId().equals(categoryId)))
+                .toList());
+    }
+
+    /** Stops recurring values from an effective month onward while retaining earlier versions.
+     *
+     * @param categoryId identity of the budgeted category
+     * @param effectiveFrom first month without a recurring value
+     * @return state containing the recurring stop marker
+     */
+    public ApplicationState withoutRecurringBudgetFrom(java.util.UUID categoryId, YearMonth effectiveFrom) {
+        Objects.requireNonNull(categoryId, "Budget category is required");
+        Objects.requireNonNull(effectiveFrom, "Recurring budget stop month is required.");
+        List<Budget> updated = new ArrayList<>(budgets.stream()
+                .filter(existing -> !(existing.repeatsMonthly()
+                        && existing.categoryId().equals(categoryId)
+                        && existing.month() != null
+                        && !existing.month().isBefore(effectiveFrom)))
+                .toList());
+        updated.add(Budget.recurringStop(categoryId, effectiveFrom));
         return new ApplicationState(categories, transactions, updated);
     }
 

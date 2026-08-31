@@ -87,7 +87,8 @@ public final class TransactionService {
         return state.budgets().stream()
                 .map(Budget::categoryId)
                 .distinct()
-                .map(categoryId -> budgetFor(categoryId, month).orElseThrow())
+                .map(categoryId -> budgetFor(categoryId, month))
+                .flatMap(Optional::stream)
                 .toList();
     }
 
@@ -103,12 +104,11 @@ public final class TransactionService {
         Objects.requireNonNull(month, "Budget month is required.");
         Optional<Budget> override = state.budgets().stream()
                 .filter(budget -> !budget.repeatsMonthly()
+                        && budget.active()
                         && budget.categoryId().equals(categoryId)
                         && budget.month().equals(month))
                 .findFirst();
-        return override.or(() -> state.budgets().stream()
-                .filter(budget -> budget.categoryId().equals(categoryId) && budget.repeatsMonthly())
-                .findFirst());
+        return override.or(() -> recurringBudgetFor(categoryId, month));
     }
 
     /**
@@ -120,8 +120,100 @@ public final class TransactionService {
     public Optional<Budget> recurringBudgetFor(UUID categoryId) {
         requireExpenseCategory(categoryId);
         return state.budgets().stream()
+                .filter(budget -> budget.categoryId().equals(categoryId)
+                        && budget.repeatsMonthly())
+                .max(Comparator.comparing(Budget::month, Comparator.nullsFirst(Comparator.naturalOrder())))
+                .filter(Budget::active);
+    }
+
+    /** Returns the active recurring value effective for one category and month.
+     *
+     * @param categoryId expense category identity
+     * @param month calendar month to inspect
+     * @return effective active recurring value when configured
+     */
+    public Optional<Budget> recurringBudgetFor(UUID categoryId, YearMonth month) {
+        requireExpenseCategory(categoryId);
+        Objects.requireNonNull(month, "Budget month is required.");
+        return activeRecurringBudgetFor(categoryId, month);
+    }
+
+    /** Indicates whether a recurring value exists at or after the supplied month.
+     *
+     * @param categoryId expense category identity
+     * @param month first month whose recurring values should be considered
+     * @return whether a recurring version can be removed from this month onward
+     */
+    public boolean hasRecurringBudgetFrom(UUID categoryId, YearMonth month) {
+        requireExpenseCategory(categoryId);
+        Objects.requireNonNull(month, "Budget month is required.");
+        List<Budget> versions = state.budgets().stream()
                 .filter(budget -> budget.categoryId().equals(categoryId) && budget.repeatsMonthly())
-                .findFirst();
+                .sorted(Comparator.comparing(Budget::month, Comparator.nullsFirst(Comparator.naturalOrder())))
+                .toList();
+        boolean active = false;
+        for (Budget version : versions) {
+            YearMonth versionMonth = version.month();
+            if (versionMonth != null) {
+                if (active && versionMonth.isAfter(month)) {
+                    return true;
+                }
+                if (!versionMonth.isBefore(month) && version.active()) {
+                    return true;
+                }
+            }
+            active = version.active();
+        }
+        return active;
+    }
+
+    /** Returns the recurring value effective for one category and month, including a stop marker. */
+    private Optional<Budget> recurringVersionFor(UUID categoryId, YearMonth month) {
+        return state.budgets().stream()
+                .filter(budget -> budget.categoryId().equals(categoryId) && budget.repeatsMonthly())
+                .filter(budget -> budget.month() == null || !budget.month().isAfter(month))
+                .max(Comparator.comparing(Budget::month, Comparator.nullsFirst(Comparator.naturalOrder())));
+    }
+
+    /** Returns the active recurring value effective for one category and month. */
+    private Optional<Budget> activeRecurringBudgetFor(UUID categoryId, YearMonth month) {
+        return recurringVersionFor(categoryId, month).filter(Budget::active);
+    }
+
+    /**
+     * Creates or replaces a recurring value from the selected month onward.
+     *
+     * @param categoryId expense category identity
+     * @param effectiveFrom first month receiving the new value
+     * @param amount plain non-negative SGD amount
+     * @return saved recurring monthly budget
+     */
+    public Budget setRecurringBudget(UUID categoryId, YearMonth effectiveFrom, String amount) {
+        Category category = requireExpenseCategory(categoryId);
+        Objects.requireNonNull(effectiveFrom, "Recurring budget start month is required.");
+        Budget budget = Budget.recurring(category.id(), effectiveFrom, MoneyAmount.parse(amount));
+        ApplicationState candidate = state.withRecurringBudget(budget, effectiveFrom);
+        persist(candidate);
+        state = candidate;
+        return budget;
+    }
+
+    /**
+     * Removes the recurring value effective for the selected month and later months.
+     *
+     * @param categoryId expense category identity
+     * @param effectiveFrom first month without a recurring value
+     */
+    public void clearRecurringBudget(UUID categoryId, YearMonth effectiveFrom) {
+        requireExpenseCategory(categoryId);
+        Objects.requireNonNull(effectiveFrom, "Recurring budget stop month is required.");
+        if (activeRecurringBudgetFor(categoryId, effectiveFrom).isEmpty()
+                && !hasRecurringBudgetFrom(categoryId, effectiveFrom)) {
+            return;
+        }
+        ApplicationState candidate = state.withoutRecurringBudgetFrom(categoryId, effectiveFrom);
+        persist(candidate);
+        state = candidate;
     }
 
     /**
@@ -136,7 +228,7 @@ public final class TransactionService {
         Objects.requireNonNull(month, "Budget month is required.");
         return state.budgets().stream()
                 .filter(budget -> budget.categoryId().equals(categoryId)
-                        && !budget.repeatsMonthly() && budget.month().equals(month))
+                        && !budget.repeatsMonthly() && budget.active() && budget.month().equals(month))
                 .findFirst();
     }
 
@@ -181,7 +273,7 @@ public final class TransactionService {
      */
     public void clearRecurringBudget(UUID categoryId) {
         requireExpenseCategory(categoryId);
-        ApplicationState candidate = state.withoutBudget(categoryId, null, true);
+        ApplicationState candidate = state.withoutRecurringBudgets(categoryId);
         persist(candidate);
         state = candidate;
     }

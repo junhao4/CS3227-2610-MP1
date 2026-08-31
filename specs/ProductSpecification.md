@@ -240,9 +240,9 @@ A category that exceeds its budget should be visibly marked. The selected protot
 
 Budget progress states use these thresholds:
 
-- green: spending is below 70% of the budget;
-- yellow: spending is from 70% through 90% of the budget; and
-- red: spending is above 90% of the budget.
+- green: spending is at or below 50% of the budget;
+- yellow: spending is above 50% through 80% of the budget; and
+- red: spending is above 80% of the budget or exceeds the budget.
 
 ### Persistence
 

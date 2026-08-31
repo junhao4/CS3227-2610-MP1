@@ -122,6 +122,23 @@ class JsonDataRepositoryTest {
     }
 
     @Test
+    void saveThenLoad_preservesRecurringBudgetVersionsAndStopMarkers() throws IOException {
+        JsonDataRepository repository = new JsonDataRepository(applicationDirectory);
+        ApplicationState initial = ApplicationState.withStarterCategories();
+        Category food = initial.categories().stream().filter(category -> category.name().equals("Food"))
+                .findFirst().orElseThrow();
+        ApplicationState saved = new ApplicationState(initial.categories(), initial.transactions(), java.util.List.of(
+                Budget.recurring(food.id(), MoneyAmount.parse("300")),
+                Budget.recurring(food.id(), java.time.YearMonth.of(2026, 9), MoneyAmount.parse("500")),
+                Budget.recurringStop(food.id(), java.time.YearMonth.of(2026, 10))));
+
+        repository.save(saved);
+
+        assertEquals(saved, repository.load().state());
+        assertFalse(repository.load().state().budgets().getLast().active());
+    }
+
+    @Test
     void saveThenLoad_preservesRenamedAndArchivedCategoriesAndReferences() throws IOException {
         JsonDataRepository repository = new JsonDataRepository(applicationDirectory);
         ApplicationState initial = ApplicationState.withStarterCategories();

@@ -13,9 +13,9 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
@@ -47,6 +47,12 @@ public class CategoryUiSmokeTest extends Application {
             service.createTransaction(TransactionType.EXPENSE, "20.00", service.defaultDate(),
                     overbudgetCategory.id(), "Over-budget smoke data");
             service.setRecurringBudget(overbudgetCategory.id(), "10.00");
+            Category largeBudgetCategory = service.categoriesFor(TransactionType.EXPENSE).stream()
+                    .filter(category -> category.name().equals("Bills")).findFirst().orElseThrow();
+            service.setRecurringBudget(largeBudgetCategory.id(), "999999999999999999999999.99");
+            Category futureBudgetCategory = service.categoriesFor(TransactionType.EXPENSE).stream()
+                    .filter(category -> category.name().equals("Transport")).findFirst().orElseThrow();
+            service.setRecurringBudget(futureBudgetCategory.id(), YearMonth.of(2026, 9), "500.00");
             Parent view = loadView(service);
             stage.setScene(new Scene(view, 700, 600));
             stage.show();
@@ -74,6 +80,11 @@ public class CategoryUiSmokeTest extends Application {
                             .allMatch(card -> card.getStyleClass().contains("expense-summary-card")
                                     && card.getPrefHeight() == 250),
                     "Expense category cards did not share a stable height");
+            require(categoryRow(view, "Bills").getChildrenUnmodifiable().stream().filter(Label.class::isInstance)
+                            .map(Label.class::cast)
+                            .anyMatch(label -> label.getText().contains("budget")
+                                    && label.getTextOverrun() == OverrunStyle.ELLIPSIS),
+                    "Large budget amount was not contained within its category card");
             VBox overbudgetCard = categoryCards.getChildren().stream().map(VBox.class::cast)
                     .filter(card -> card.getChildren().stream().filter(Label.class::isInstance)
                             .map(Label.class::cast).anyMatch(label -> label.getText().contains("over budget")))
@@ -87,21 +98,43 @@ public class CategoryUiSmokeTest extends Application {
                                     .contains("manage-action")),
                     "Manage action was not marked for bold card styling");
 
-            Button manageBudgets = requireNode(view, "manageBudgetsButton", Button.class);
-            manageBudgets.fire();
+            chooseManagementAction("Set budget");
+            requireButtonNamed(categoryRow(view, "Transport"), "Manage").fire();
+            Button removeFutureRecurring = requireNode(view, "removeRecurringBudgetButton", Button.class);
+            require(removeFutureRecurring.isVisible(),
+                    "A future recurring budget did not expose removal from the earlier selected month");
+            removeFutureRecurring.fire();
+            require(service.budgetFor(futureBudgetCategory.id(), YearMonth.of(2026, 9)).isEmpty(),
+                    "Removing from an earlier month left a future recurring budget");
+            requireNode(view, "backToCategoriesButton", Button.class).fire();
+
+            chooseManagementAction("Set budget");
+            requireButtonNamed(categoryRow(view, "Food"), "Manage").fire();
             require(!requireNode(view, "categoryLandingView", VBox.class).isVisible(),
-                    "Category landing view remained visible while managing budgets");
+                    "Category landing view remained visible while editing a budget");
             require(requireNode(view, "budgetManagerView", VBox.class).isVisible(),
-                    "Budget manager was not progressively disclosed");
-            requireNode(view, "viewBudgetMonthPicker", DatePicker.class);
-            HBox foodBudgetRow = (HBox) budgetRow(view, "Food").getChildren().getFirst();
-            requireButtonNamed(foodBudgetRow, "Set budget").fire();
+                    "Focused budget editor screen was not shown");
+            require(!requireNode(view, "budgetListPanel", VBox.class).isVisible(),
+                    "Focused budget editor unexpectedly showed the all-category budget list");
+            require(requireNode(view, "budgetDetailPanel", VBox.class).isVisible(),
+                    "Focused budget editor was not shown");
+            require(requireNode(view, "budgetEditorTitle", Label.class).getText().contains("Food"),
+                    "Focused budget editor did not identify the selected category");
+            require(requireNode(view, "budgetMonthValueLabel", Label.class).getText().equals("August 2026"),
+                    "Budget view did not default to the current month");
+            requireNode(view, "previousBudgetMonthButton", Button.class).fire();
+            require(requireNode(view, "budgetMonthValueLabel", Label.class).getText().equals("July 2026"),
+                    "Previous month control did not move one calendar month");
+            requireNode(view, "nextBudgetMonthButton", Button.class).fire();
+            require(requireNode(view, "budgetMonthValueLabel", Label.class).getText().equals("August 2026"),
+                    "Next month control did not restore the selected month");
 
             TextField budgetAmount = requireNode(view, "budgetAmountField", TextField.class);
             Button saveBudget = requireNode(view, "setBudgetButton", Button.class);
             Category food = service.categoriesFor(TransactionType.EXPENSE).stream()
                     .filter(category -> category.name().equals("Food")).findFirst().orElseThrow();
-            requireNode(view, "budgetDetailPanel", VBox.class);
+            require(!requireNode(view, "removeRecurringBudgetButton", Button.class).isVisible(),
+                    "Recurring remove action was visible without a recurring budget");
             requireButtonNamed(requireNode(view, "recurringBudgetRow", HBox.class), "Set").fire();
             budgetAmount.setText("0.00");
             saveBudget.fire();
@@ -149,23 +182,15 @@ public class CategoryUiSmokeTest extends Application {
             requireButtonNamed(requireNode(view, "monthBudgetRow", HBox.class), "Set").fire();
             budgetAmount.setText("100.00");
             saveBudget.fire();
-            require(budgetRow(view, "Food").getStyleClass().contains("category-card"),
-                    "Budget item did not use the prototype card presentation");
-            require(budgetRow(view, "Food").getChildren().stream()
-                            .filter(Label.class::isInstance).map(Label.class::cast)
-                            .anyMatch(label -> label.getText().contains("Spent in August 2026:")),
-                    "Budget card did not identify spending for the selected month");
-            require(budgetRow(view, "Food").getChildren().stream()
-                            .filter(Label.class::isInstance).map(Label.class::cast)
-                            .anyMatch(label -> label.getText().contains("Applied budget for August 2026:")),
-                    "Budget card did not identify the applied budget scope");
-            require(budgetRow(view, "Food").getChildren().stream()
-                            .filter(Label.class::isInstance).map(Label.class::cast)
-                            .anyMatch(label -> label.getText().equals("Monthly budget: S$0.00 every month")),
-                    "Budget list did not show the monthly default beneath a month-only budget");
+            require(categoryRow(view, "Food").getStyleClass().contains("category-card"),
+                    "Budget category did not use the prototype card presentation");
             requireNode(view, "backToCategoriesButton", Button.class).fire();
-            require(requireNode(view, "categoryLandingView", VBox.class).isVisible(),
-                    "Back to categories did not restore the category landing view");
+            require(requireNode(view, "categoryLandingView", VBox.class).isVisible()
+                            && !requireNode(view, "budgetManagerView", VBox.class).isVisible(),
+                    "Closing the budget editor did not restore the category landing view");
+            require(categoryRow(view, "Food").getChildrenUnmodifiable().stream().filter(Label.class::isInstance)
+                            .map(Label.class::cast).anyMatch(label -> label.getText().contains("$100.00")),
+                    "Returning to categories did not refresh the edited budget card");
 
             require(!requireNode(view, "categoryCreationPanel", VBox.class).isVisible(),
                     "Category creation form was not progressively disclosed");
@@ -221,13 +246,18 @@ public class CategoryUiSmokeTest extends Application {
             ((Button) categoryDialog.lookupButton(ButtonType.CANCEL)).fire();
             chooseManagementAction("Set budget");
             requireButtonNamed(categoryRow(view, "Investments"), "Manage").fire();
-            require(requireNode(view, "budgetManagerView", VBox.class).isVisible(),
-                    "Manage dialog did not open the focused budget view");
-            require(requireNode(view, "budgetDetailPanel", VBox.class).isVisible(),
-                    "Focused budget view did not select the managed category");
+            require(!requireNode(view, "categoryLandingView", VBox.class).isVisible(),
+                    "Category landing view remained visible while editing a budget");
+            require(requireNode(view, "budgetManagerView", VBox.class).isVisible()
+                            && !requireNode(view, "budgetListPanel", VBox.class).isVisible()
+                            && requireNode(view, "budgetDetailPanel", VBox.class).isVisible(),
+                    "Manage action did not open the single-category budget screen");
             require(requireNode(view, "budgetEditorTitle", Label.class).getText().contains("Investments"),
-                    "Focused budget view did not identify the selected category");
+                    "Focused budget editor did not identify the selected category");
             requireNode(view, "backToCategoriesButton", Button.class).fire();
+            require(requireNode(view, "categoryLandingView", VBox.class).isVisible()
+                            && !requireNode(view, "budgetManagerView", VBox.class).isVisible(),
+                    "Closing the focused budget screen did not return to categories");
 
             Category archived = service.createCategory(TransactionType.EXPENSE, "Loans");
             service.renameCategory(archived.id(), "Archived investments");
@@ -401,17 +431,6 @@ public class CategoryUiSmokeTest extends Application {
                 .filter(row -> ((Label) row.getChildrenUnmodifiable().getFirst()).getText().equals(categoryText))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Category row was not shown: " + categoryText));
-    }
-
-    /** Finds a budget row by the category label shown at the start of its main line. */
-    private static VBox budgetRow(Parent parent, String categoryName) {
-        return requireNode(parent, "budgetRows", VBox.class).getChildren().stream()
-                .map(VBox.class::cast)
-                .filter(row -> ((HBox) row.getChildren().getFirst()).getChildren().stream()
-                        .filter(Label.class::isInstance).map(Label.class::cast)
-                        .anyMatch(label -> label.getText().equals(categoryName)))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Budget row was not shown: " + categoryName));
     }
 
     private static Button buttonNamed(Parent row, String text) {

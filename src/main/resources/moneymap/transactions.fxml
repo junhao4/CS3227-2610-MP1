@@ -79,7 +79,7 @@
                         </columnConstraints>
                         <Label fx:id="transactionTypeLabel" text="Type" GridPane.columnIndex="0" GridPane.rowIndex="0" />
                         <ComboBox fx:id="transactionTypeComboBox" id="transactionTypeComboBox" maxWidth="Infinity" accessibleText="Transaction type" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                        <Label fx:id="transactionAmountLabel" text="Amount (S$)" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        <Label fx:id="transactionAmountLabel" text="Amount ($)" GridPane.columnIndex="1" GridPane.rowIndex="0" />
                         <TextField fx:id="transactionAmountField" id="transactionAmountField" promptText="0.00" accessibleText="Transaction amount in Singapore dollars" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                         <Label fx:id="transactionDateLabel" text="Date" GridPane.columnIndex="0" GridPane.rowIndex="2" />
                         <DatePicker fx:id="transactionDatePicker" id="transactionDatePicker" maxWidth="Infinity" accessibleText="Transaction date" GridPane.columnIndex="0" GridPane.rowIndex="3" />
