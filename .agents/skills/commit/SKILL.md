@@ -77,6 +77,17 @@ the smallest set of commits that each builds, tests, and communicates one
 coherent change without separating inseparable feature code from its tests or
 user and developer documentation.
 
+### Whole commit plan
+
+Before staging any group, show the complete proposed commit sequence at once.
+For every planned commit, state its order, Conventional Commit message and
+body (including any `Refs: #<number>` trailer), classified paths, and why it
+is a separate outcome. Also state every path intentionally left uncommitted or
+excluded, including an ignored file that would need explicit inclusion. Wait
+for the user to approve or adjust this grouping before staging. This plan
+approval does not replace the explicit confirmation required immediately
+before each `git commit`.
+
 Stage explicit paths only:
 
 ```bash
@@ -99,6 +110,12 @@ Use Conventional Commits:
   exceed 72.
 - For non-trivial commits, add a body explaining what changed and why, wrapped
   at 72 characters.
+- When a commit delivers work for a known GitHub issue, add a separate final
+  body line `Refs: #<number>`. Use the issue identified by the request, branch,
+  or reviewed change. This records traceability without closing an issue;
+  closing keywords such as `Fixes` or `Closes` remain for the separate
+  close-issue workflow. Do not invent an issue reference for unrelated
+  maintenance work or when the issue number is unknown.
 
 Before each commit:
 
