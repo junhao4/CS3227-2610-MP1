@@ -35,6 +35,11 @@ public class PrototypeController {
     }
 
     @FXML
+    private void showTransactionsC() {
+        load("/fxml/transactions-c.fxml");
+    }
+
+    @FXML
     private void showCategoriesA() {
         load("/fxml/categories-a.fxml");
     }

@@ -23,8 +23,10 @@ executables:
   directory and verifies the list-first hierarchy, progressive form
   disclosure, focus transitions, type-compatible categories, valid creation,
   validation feedback, fallback assignment, newest-first history, combined
-  history filtering, note search, empty results, filter reset, JSON save,
-  reload, and visible rows.
+  history filtering, note search, empty results, filter reset, date-grouped
+  cards, no-note and wrapped-note presentation, the overflow action menu,
+  maximum-amount feedback, editing, confirmed and cancelled deletion, JSON
+  save, reload, and visible rows.
 - `verifyCategoryUi` loads the real Categories and Budgets FXML with a temporary
   data directory and verifies custom category creation, normalization,
   duplicate validation, type scoping, visible feedback, the configured vertical
@@ -35,7 +37,7 @@ executables:
   preservation, stable category-card sizing and progress visibility,
   blocked-deletion feedback, archived-category filtering, and reload.
 
-`verifyPrototypes` separately verifies that all eight exploratory prototype
+`verifyPrototypes` separately verifies that all nine exploratory prototype
 FXML resources still load. It does not test production behavior.
 
 The current JUnit suite covers the domain, validation,
@@ -114,7 +116,7 @@ and persistence responsibilities:
 | Area | Main responsibilities |
 | --- | --- |
 | JavaFX presentation | `MoneyMapApp` assembles dependencies and creates the stage. `ApplicationController` owns shell navigation. `TransactionController` and `CategoryController` connect the transaction and custom-category workflows to their FXML views. `SgdFormatter` formats display values. |
-| Application/service | `TransactionService` loads state, supplies type-compatible categories, validates and creates custom categories, resolves fallback categories, creates transactions, safely reassigns or deletes categories, configures monthly expense budgets, calculates category spending and budget state, and exposes non-mutating transaction-history queries. `DataRepository` is its persistence boundary. |
+| Application/service | `TransactionService` loads state, supplies type-compatible categories, validates and creates or updates transactions and custom categories, resolves fallback categories, safely removes transactions, reassigns or deletes categories, configures monthly expense budgets, calculates category spending and budget state, and exposes non-mutating transaction-history queries. `DataRepository` is its persistence boundary. |
 | Domain | `Transaction`, `TransactionType`, `MoneyAmount`, `Category`, `Budget`, `StarterCategoryCatalog`, and `ApplicationState` hold immutable data and enforce core invariants. |
 | Persistence | `ApplicationDirectoryResolver` chooses a stable application base. `JsonDataRepository` maps state to versioned JSON and performs load, validation, atomic replacement, and corrupt-file recovery. |
 
@@ -135,9 +137,11 @@ Only `src/main/` and runtime dependencies are included in `MoneyMap.jar`.
 
 ### Transaction creation flow
 
-1. The Transactions screen initially presents the real list and a single Add
-   action. The form is progressively disclosed and focus moves to its first
-   control.
+1. The Transactions screen initially presents the real ledger, its search and
+   filter controls, and a single Add action in the ledger toolbar above the
+   daily cards. Add or Edit swaps that content for a focused in-page form, and
+   focus moves to its first control. Returning to the ledger keeps its existing
+   query controls intact.
 2. `TransactionController` passes the selected type, raw amount, date,
    optional category ID, and note to `TransactionService`.
 3. The service resolves an omitted category to the permanent Income or Expense
@@ -154,6 +158,31 @@ Only `src/main/` and runtime dependencies are included in `MoneyMap.jar`.
 The clock and UUID supplier are injected, allowing tests to use a fixed date
 and deterministic transaction identity. Production uses the system clock and
 random UUIDs.
+
+### Transaction correction and deletion flow
+
+The list groups same-date transactions into one daily card, headed by that
+calendar date. A row uses **No note** for an empty optional note and allows a
+long note to wrap in the available description area. Its single **⋯** menu
+contains **Edit transaction** and **Delete transaction** actions. Edit reuses
+the transaction form and preserves the transaction ID; on save,
+`TransactionService.updateTransaction` constructs a replacement `Transaction`
+using the same validation and category-resolution path as creation. It creates
+an immutable candidate through `ApplicationState.withUpdatedTransaction`, saves
+the candidate, and publishes it only after a successful save.
+
+An archived category normally cannot be chosen for a new transaction or as a
+replacement during an edit. The one intentional exception is the transaction's
+own existing archived category: the edit form keeps that historical reference
+selected so a correction to another field does not silently recategorise it.
+
+Delete is deliberately separate from the state operation. The controller first
+shows JavaFX's standard confirmation dialog. Only its **OK** result invokes
+`TransactionService.deleteTransaction`; **Cancel** leaves service state and the
+JSON file untouched. A confirmed deletion produces an immutable state without
+the selected ID, then follows the same save-before-publish ordering. This keeps
+the confirmation decision in the presentation layer while the service remains
+usable from non-JavaFX callers.
 
 ### Transaction history query and display
 
@@ -248,8 +277,11 @@ Money amounts are stored as `BigDecimal` through `MoneyAmount` and normalized
 to two decimal places. The form parser accepts trimmed plain decimal strings
 that begin with a digit and have zero, one, or two fractional digits. It rejects
 negative-form input, excessive precision, currency symbols, grouping commas,
-scientific notation, `.50`, and `1.`. Display formatting is centralized and
-uses the fixed `S$` prefix with grouping and two decimal places.
+scientific notation, `.50`, and `1.`. `Transaction` additionally rejects a
+value above `9999999.99`; this is a transaction-recording bound, rather than a
+general `MoneyAmount` bound, so monthly budgets retain their existing monetary
+validation. Display formatting is centralized and uses the fixed `S$` prefix
+with grouping and two decimal places.
 
 Transaction dates are required. The form defaults to `LocalDate.now(clock)`;
 the domain imposes no past or future restriction. Notes are normalized from
@@ -329,11 +361,12 @@ values:
   large exact values, negative forms, scale three, malformed and formatted
   input, and null;
 - transaction tests cover past, present, and future dates, missing dates,
-  optional notes, 200/201-code-point boundaries, and category compatibility;
+  optional notes, 200/201-code-point boundaries, the `9999999.99` maximum and
+  its rejection boundary, and category compatibility;
 - catalog tests cover the exact starter sets and two distinct permanent
   fallbacks;
 - service tests cover injected today, type-specific categories, Income
-  creation, automatic fallback, mismatch rejection, custom category creation
+  creation, correction and deletion, automatic fallback, mismatch rejection, custom category creation
   and validation, rename/archive/restore rules and conflicts, compatible
   transaction use, save invocation, save-before-publish failure behavior,
   newest-first history ordering, each
@@ -346,13 +379,17 @@ values:
   unsupported future versions, valid-main orphan temporary files, recovery of
   a valid temporary first save, preservation of an invalid temporary first
   save, invalid-date recovery from main and temporary files, recurring
-  explicit-zero budget round-trip, and preservation
+  explicit-zero budget round-trip, edited/deleted-transaction round-trip, and preservation
   of a valid file after a failed temporary write.
 
 `TransactionUiSmokeTest` complements those tests at the integration level. It
-checks the visible history controls, newest-first displayed results, combined
-filters, case-insensitive note search, the no-results state, and Clear filters
-in addition to the transaction-creation workflow. `CategoryUiSmokeTest` checks
+checks the visible history controls, newest-first displayed results, exact-date
+groups, no-note and wrapped-note presentation, combined filters,
+case-insensitive note search, the no-results state, and Clear filters in
+addition to the transaction-creation workflow. It also checks the overflow
+action menu, type-aware editing, maximum-amount feedback, and both standard
+deletion outcomes before reloading the resulting JSON state.
+`CategoryUiSmokeTest` checks
 custom-category creation, validation, type scoping, active/archived switching,
 restore controls, archived-category exclusion from new transactions, recurring
   default and month-only budget configuration, removal of each budget scope,
@@ -378,14 +415,15 @@ Use a disposable directory so the test cannot alter personal data.
 
 ### Progressive transaction form and starter categories
 
-1. Open Transactions and confirm the transaction list appears before the form
-   area and the form is initially hidden.
-2. Select **＋ Add transaction** and confirm the form appears below the list and
-   focus moves to **Type**.
+1. Open Transactions and confirm the ledger, its search/filter band, and the
+   **＋ Add transaction** action above **Your transactions** are visible while
+   the form is hidden.
+2. Select **＋ Add transaction** and confirm the ledger is replaced by a focused
+   form, with focus on **Type**.
 3. Switch between Income and Expense and confirm the selector shows exactly the
    type-compatible starter categories documented in the User Guide.
-4. Enter unfinished values, select **Cancel**, and confirm no row is added and
-   the form collapses.
+4. Enter unfinished values, select **Cancel** or **← Back to transactions**,
+   and confirm no row is added and the ledger returns with its query unchanged.
 
 ### Valid and invalid transactions
 
@@ -393,32 +431,55 @@ Use a disposable directory so the test cannot alter personal data.
    displays two decimal places.
 2. Save an Income transaction and confirm its amount has a plus sign and uses
    Income styling.
-3. Try `-0.01`, `-0.00`, `1.234`, `S$1.00`, `1,000.00`, `.50`, `1.`, and blank
+3. Save `9999999.99`, then try `10000000`; confirm the former saves and the
+   latter is rejected with feedback naming the maximum.
+4. Try `-0.01`, `-0.00`, `1.234`, `S$1.00`, `1,000.00`, `.50`, `1.`, and blank
    input. Confirm each is rejected with text feedback and creates no row.
-4. Save transactions dated in the past, today, and the future.
-5. Save one transaction with an empty note and one with a 200-character note.
+5. Save transactions dated in the past, today, and the future.
+6. Save one transaction with an empty note and one with a 200-character note.
    Confirm a 201-character note is rejected.
-6. Save one Income and one Expense without selecting a category. Confirm each
+7. Save one Income and one Expense without selecting a category. Confirm each
    displays `Uncategorised`; switching type must never expose a category of the
    other type.
-7. Confirm a validation error leaves the form open and a successful save
+8. Confirm a validation error leaves the form open and a successful save
    collapses it.
 
 ### Review and locate transaction history
 
 1. Save transactions across at least two months, with both Income and Expense
    types, distinct categories, and distinguishable notes.
-2. Confirm the transaction list is ordered with the latest date first.
-3. Select each **Month**, **Type**, and **Category** filter separately and
+2. Save two transactions on one date. Confirm the transaction list is ordered
+   with the latest date first, shows that date once, and contains both rows in
+   one bordered daily card.
+3. Confirm an empty note reads **No note**. Give another row a long note and
+   confirm the text wraps without obscuring its amount or **⋯** action.
+4. Select each **Month**, **Type**, and **Category** filter separately and
    confirm only matching records remain visible.
-4. Enter a word from a note in **Search notes**, then repeat using a different
+5. Enter a word from a note in **Search notes**, then repeat using a different
    letter case. Confirm the same matching records remain visible.
-5. Combine a month, type, category, and matching note query. Confirm every
+6. Combine a month, type, category, and matching note query. Confirm every
    displayed row matches all active criteria.
-6. Enter text that is absent from every note. Confirm the list shows **No
+7. Enter text that is absent from every note. Confirm the list shows **No
    matching transactions** and does not show the no-transactions message.
-7. Select **Clear filters**. Confirm all saved rows return, then restart the
+8. Select **Clear filters**. Confirm all saved rows return, then restart the
    application and confirm the same records remain saved.
+
+### Edit and delete transactions
+
+1. Create an Expense transaction, open **⋯** in its row, select **Edit
+   transaction**, and confirm the form contains its saved values and identifies
+   itself as **Edit transaction**.
+2. Change the type to Income. Confirm only Income categories are offered, then
+   select one, change the amount, date, and note, and select **Save changes**.
+   Confirm the row and its values update without creating a second record.
+3. Attempt an invalid edited amount. Confirm the correction form remains open
+   and the original saved values remain in the list after cancelling.
+4. Open **⋯**, select **Delete transaction**, and confirm the standard dialog
+   identifies it and its **Cancel** action leaves the row in place.
+5. Open **⋯** again, select **Delete transaction**, and accept **OK**. Confirm
+   only that row disappears,
+   then restart MoneyMap and confirm the edit remains while the confirmed
+   deletion does not return.
 
 ### Create and use custom categories
 
@@ -543,8 +604,8 @@ Perform this only in the disposable test directory.
    confirm focus is visible and follows the visual order.
 2. Activate ordinary focused buttons with Space on macOS or Enter/Space on
    Windows and Linux.
-3. Confirm Add moves focus into the disclosed form and Cancel returns focus to
-   Add.
+3. Confirm Add moves focus into the focused form and Cancel or **← Back to
+   transactions** returns focus to Add.
 4. Resize the window to its minimum and confirm the list, form, and navigation
    remain reachable and usable.
 

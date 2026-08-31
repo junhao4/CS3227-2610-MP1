@@ -20,6 +20,7 @@
             <Label text="TRANSACTION PROTOTYPES" styleClass="nav-heading" />
             <Button maxWidth="Infinity" text="A · List first" onAction="#showTransactionsA" styleClass="nav-button" />
             <Button maxWidth="Infinity" text="B · Quick entry" onAction="#showTransactionsB" styleClass="nav-button" />
+            <Button maxWidth="Infinity" text="C · Daily ledger" onAction="#showTransactionsC" styleClass="nav-button" />
             <Label text="CATEGORY PROTOTYPES" styleClass="nav-heading" />
             <Button maxWidth="Infinity" text="A · Budget rows" onAction="#showCategoriesA" styleClass="nav-button" />
             <Button maxWidth="Infinity" text="B · Category cards" onAction="#showCategoriesB" styleClass="nav-button" />

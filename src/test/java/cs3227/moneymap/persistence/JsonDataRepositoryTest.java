@@ -62,6 +62,37 @@ class JsonDataRepositoryTest {
     }
 
     @Test
+    void saveThenLoad_preservesEditedTransactionsAndOmitsDeletedTransactions() throws IOException {
+        JsonDataRepository repository = new JsonDataRepository(applicationDirectory);
+        ApplicationState initial = ApplicationState.withStarterCategories();
+        Category food = initial.categories().stream()
+                .filter(category -> category.name().equals("Food"))
+                .findFirst()
+                .orElseThrow();
+        Category salary = initial.categories().stream()
+                .filter(category -> category.name().equals("Salary"))
+                .findFirst()
+                .orElseThrow();
+        Transaction original = new Transaction(
+                UUID.fromString("20000000-0000-0000-0000-000000000010"), TransactionType.EXPENSE,
+                MoneyAmount.parse("8.50"), LocalDate.of(2026, 8, 30), food, "Lunch");
+        Transaction edited = new Transaction(
+                UUID.fromString("20000000-0000-0000-0000-000000000010"), TransactionType.INCOME,
+                MoneyAmount.parse("600.00"), LocalDate.of(2026, 9, 1), salary, "Corrected allowance");
+        Transaction deleted = new Transaction(
+                UUID.fromString("20000000-0000-0000-0000-000000000011"), TransactionType.EXPENSE,
+                MoneyAmount.parse("8.50"), LocalDate.of(2026, 8, 30), food, "Incorrect lunch");
+        ApplicationState saved = initial.withTransaction(deleted).withTransaction(original)
+                .withUpdatedTransaction(edited)
+                .withoutTransaction(deleted.id());
+
+        repository.save(saved);
+
+        assertEquals(saved, repository.load().state());
+        assertEquals(java.util.List.of(edited), repository.load().state().transactions());
+    }
+
+    @Test
     void saveThenLoad_preservesCustomCategories() throws IOException {
         JsonDataRepository repository = new JsonDataRepository(applicationDirectory);
         ApplicationState initial = ApplicationState.withStarterCategories();

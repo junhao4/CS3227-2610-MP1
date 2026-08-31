@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="20" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" styleClass="page">
+    <padding><Insets top="34" right="42" bottom="34" left="42" /></padding>
+    <HBox alignment="CENTER_LEFT">
+        <VBox spacing="4">
+            <Label text="Transactions" styleClass="page-title" />
+            <Label text="A daily ledger for reviewing and correcting your records." styleClass="muted" />
+        </VBox>
+        <Label HBox.hgrow="ALWAYS" />
+        <Button text="＋ Add transaction" styleClass="primary-button" />
+    </HBox>
+    <HBox spacing="10">
+        <TextField promptText="Search notes…" prefWidth="390" />
+        <Button text="Filter &amp; sort" styleClass="secondary-button" />
+    </HBox>
+    <VBox spacing="8" maxWidth="760">
+        <Label text="31 Aug 2026" styleClass="ledger-date-heading" />
+        <VBox spacing="0" styleClass="daily-ledger-group">
+            <HBox alignment="CENTER_LEFT" spacing="16" styleClass="ledger-transaction-row">
+                <VBox HBox.hgrow="ALWAYS" spacing="3">
+                    <Label text="Lunch with classmates" styleClass="row-label" />
+                    <Label text="Food · Expense" styleClass="muted" />
+                </VBox>
+                <Label text="−S$8.50" styleClass="amount-expense" />
+                <Button text="Edit" styleClass="text-button" />
+                <Button text="⋯" styleClass="more-action" accessibleText="More actions for lunch with classmates" />
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="16" styleClass="ledger-transaction-row">
+                <VBox HBox.hgrow="ALWAYS" spacing="3">
+                    <Label text="MRT top-up" styleClass="row-label" />
+                    <Label text="Transport · Expense" styleClass="muted" />
+                </VBox>
+                <Label text="−S$20.00" styleClass="amount-expense" />
+                <Button text="Edit" styleClass="text-button" />
+                <Button text="⋯" styleClass="more-action" accessibleText="More actions for MRT top-up" />
+            </HBox>
+        </VBox>
+    </VBox>
+    <VBox spacing="8" maxWidth="760">
+        <Label text="30 Aug 2026" styleClass="ledger-date-heading" />
+        <VBox spacing="0" styleClass="daily-ledger-group">
+            <HBox alignment="CENTER_LEFT" spacing="16" styleClass="ledger-transaction-row">
+                <VBox HBox.hgrow="ALWAYS" spacing="3">
+                    <Label text="Monthly allowance" styleClass="row-label" />
+                    <Label text="Allowance · Income" styleClass="muted" />
+                </VBox>
+                <Label text="+S$600.00" styleClass="amount-income" />
+                <Button text="Edit" styleClass="text-button" />
+                <Button text="⋯" styleClass="more-action" accessibleText="More actions for monthly allowance" />
+            </HBox>
+        </VBox>
+    </VBox>
+    <VBox spacing="5" styleClass="tip-card" maxWidth="760">
+        <Label text="Action idea" styleClass="section-title" />
+        <Label text="Edit is visible for the common correction path. The ⋯ action can contain Delete so permanent removal stays deliberate." styleClass="muted" wrapText="true" />
+    </VBox>
+</VBox>

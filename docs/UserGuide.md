@@ -50,8 +50,8 @@ a focused control with Space. On Windows and Linux, use Enter or Space.
 ## Record a transaction
 
 1. Open **Transactions**.
-2. Select **＋ Add transaction**. The form appears below the transaction list
-   and keyboard focus moves to **Type**.
+2. Select **＋ Add transaction** above **Your transactions**. The ledger is
+   replaced by a focused form and keyboard focus moves to **Type**.
 3. Select **Income** or **Expense**.
 4. Enter the amount without `S$` or grouping commas, for example `0`, `12`,
    `12.3`, or `12.34`.
@@ -66,13 +66,36 @@ list. Income amounts use a plus sign and Expense amounts use a minus sign; both
 are displayed as SGD with exactly two decimal places, for example `+S$600.00`
 and `−S$8.50`.
 
-Select **Cancel** to discard the unfinished form without saving a transaction.
+Select **Cancel** or **← Back to transactions** to discard the unfinished form
+without saving a transaction and return to the ledger. Your current search and
+filter selections remain available when you return.
+
+## Edit or delete a transaction
+
+Open **Transactions**, then choose the **⋯** menu at the end of the
+transaction's row. Choose **Edit transaction** or **Delete transaction**.
+
+- **Edit** opens the same labelled form with the saved amount, date, type,
+  category, and note. Change any field, then select **Save changes**. The
+  normal transaction rules still apply: changing the type replaces the
+  category choices with compatible categories, and an invalid value keeps the
+  correction form open without changing the saved transaction. If the saved
+  category has since been archived, it remains selected for that historical
+  record; you can retain it or choose a current compatible category instead.
+- **Delete** opens a standard confirmation dialog identifying the transaction.
+  Select **Cancel** to leave it unchanged, or select **OK** to permanently
+  remove it. Deleted transactions cannot be restored by MoneyMap.
+
+Edits and confirmed deletions are saved automatically and remain in effect
+after MoneyMap restarts.
 
 ## Review and find transactions
 
 Open **Transactions** to review saved records. The list is ordered by date with
-the newest transactions first. Use the **Find transactions** controls above the
-list to narrow the displayed records:
+the newest transactions first. Each date is shown once above a card containing
+that day's transactions. Notes wrap within their row; a transaction without a
+note shows **No note**. Use the **Find transactions** controls above the list
+to narrow the displayed records:
 
 1. Select a **Month**, **Type**, or **Category** to show only matching
    transactions. Leaving a selector at its `All ...` prompt does not restrict
@@ -94,7 +117,7 @@ remove saved transactions.
 | Field | Accepted input | Invalid input and behavior |
 | --- | --- | --- |
 | Type | Income or Expense | A transaction cannot be saved without a type. |
-| Amount | Zero or a positive plain decimal beginning with a digit and containing at most two decimal places | Blank, negative, negative-form zero, more than two decimal places, letters, `S$`, commas, scientific notation, `.50`, and `1.` are rejected. |
+| Amount | Zero through `9999999.99`, as a plain decimal beginning with a digit and containing at most two decimal places | Blank, negative, negative-form zero, values greater than `9999999.99`, more than two decimal places, letters, `S$`, commas, scientific notation, `.50`, and `1.` are rejected. |
 | Date | A required past, present, or future date; defaults to today | A missing date is rejected. |
 | Category | An optional category matching the selected type | Changing the type clears an incompatible selection. Leaving the field empty uses the matching `Uncategorised` category. |
 | Note | Empty or up to 200 characters | A note longer than 200 characters is rejected. The form displays a live character count. |
@@ -270,9 +293,10 @@ restore are not available yet.
   accessible descriptions.
 - Tab follows the visual control order through the list-first screen and the
   disclosed form.
-- **＋ Add transaction** reveals the form and moves focus to **Type**.
-- **Cancel** closes the form without saving and returns focus to
-  **＋ Add transaction**.
+- **＋ Add transaction** switches from the ledger to the focused form and moves
+  focus to **Type**.
+- **Cancel** or **← Back to transactions** discards the form without saving and
+  returns focus to **＋ Add transaction**.
 - Validation is communicated with text, not colour alone.
 - On macOS, use Space to activate a focused ordinary button. On Windows and
   Linux, use Enter or Space. **Save transaction** is the form's default action.

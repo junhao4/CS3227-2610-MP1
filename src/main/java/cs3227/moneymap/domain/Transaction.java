@@ -1,5 +1,6 @@
 package cs3227.moneymap.domain;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.UUID;
@@ -17,6 +18,7 @@ import java.util.UUID;
 public record Transaction(UUID id, TransactionType type, MoneyAmount amount,
                           LocalDate date, Category category, String note) {
     private static final int MAX_NOTE_LENGTH = 200;
+    private static final BigDecimal MAX_AMOUNT = new BigDecimal("9999999.99");
 
     /** Validates all transaction invariants. */
     public Transaction {
@@ -28,6 +30,9 @@ public record Transaction(UUID id, TransactionType type, MoneyAmount amount,
         note = note == null ? "" : note;
         if (note.codePointCount(0, note.length()) > MAX_NOTE_LENGTH) {
             throw new IllegalArgumentException("Note must contain at most 200 characters.");
+        }
+        if (amount.value().compareTo(MAX_AMOUNT) > 0) {
+            throw new IllegalArgumentException("Amount must be between S$0.00 and S$9,999,999.99.");
         }
         if (category.type() != type) {
             throw new IllegalArgumentException("Category must match the transaction type.");

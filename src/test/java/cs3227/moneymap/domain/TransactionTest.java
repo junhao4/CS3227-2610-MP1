@@ -52,6 +52,20 @@ class TransactionTest {
                 LocalDate.now(), SALARY, ""));
     }
 
+    @Test
+    void constructor_amountAboveMaximumTransactionValue_rejected() {
+        assertThrows(IllegalArgumentException.class, () -> new Transaction(
+                UUID.randomUUID(), TransactionType.EXPENSE, MoneyAmount.parse("10000000"),
+                LocalDate.now(), FOOD, "Too large"));
+    }
+
+    @Test
+    void constructor_maximumTransactionValue_accepted() {
+        assertDoesNotThrow(() -> new Transaction(
+                UUID.randomUUID(), TransactionType.EXPENSE, MoneyAmount.parse("9999999.99"),
+                LocalDate.now(), FOOD, "Maximum value"));
+    }
+
     private static Transaction transaction(LocalDate date, String note) {
         return new Transaction(UUID.randomUUID(), TransactionType.EXPENSE,
                 MoneyAmount.parse("12.34"), date, FOOD, note);

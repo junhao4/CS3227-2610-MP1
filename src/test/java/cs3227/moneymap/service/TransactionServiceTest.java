@@ -273,6 +273,83 @@ class TransactionServiceTest {
     }
 
     @Test
+    void updateTransaction_replacesEveryEditableFieldAndPersists() throws IOException {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        Category salary = categoryNamed("Salary", TransactionType.INCOME);
+        Transaction original = service.createTransaction(
+                TransactionType.EXPENSE, "8.50", TODAY, food.id(), "Lunch");
+
+        Transaction updated = service.updateTransaction(
+                original.id(), TransactionType.INCOME, "600.00", TODAY.plusDays(1), salary.id(), "Allowance");
+
+        assertEquals(original.id(), updated.id());
+        assertEquals(TransactionType.INCOME, updated.type());
+        assertEquals(MoneyAmount.parse("600.00"), updated.amount());
+        assertEquals(TODAY.plusDays(1), updated.date());
+        assertEquals(salary, updated.category());
+        assertEquals("Allowance", updated.note());
+        assertEquals(List.of(updated), service.transactions());
+        assertEquals(List.of(updated), repository.savedState.transactions());
+    }
+
+    @Test
+    void updateTransaction_usesCreationValidationWithoutSavingInvalidChanges() throws IOException {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        Transaction original = service.createTransaction(
+                TransactionType.EXPENSE, "8.50", TODAY, food.id(), "Lunch");
+        int savesBeforeUpdate = repository.saveCount;
+
+        assertThrows(IllegalArgumentException.class, () -> service.updateTransaction(
+                original.id(), TransactionType.INCOME, "-1", TODAY, food.id(), "Wrong type"));
+        assertThrows(IllegalArgumentException.class, () -> service.updateTransaction(
+                UUID.randomUUID(), TransactionType.EXPENSE, "1", TODAY, food.id(), "Missing"));
+
+        assertEquals(savesBeforeUpdate, repository.saveCount);
+        assertEquals(original, service.transactions().getFirst());
+    }
+
+    @Test
+    void updateTransaction_retainsItsExistingArchivedCategoryButRejectsOtherArchivedCategories() throws IOException {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        Category transport = categoryNamed("Transport", TransactionType.EXPENSE);
+        Transaction original = service.createTransaction(
+                TransactionType.EXPENSE, "8.50", TODAY, food.id(), "Lunch");
+        service.archiveCategory(food.id());
+        service.archiveCategory(transport.id());
+
+        Transaction updated = service.updateTransaction(
+                original.id(), TransactionType.EXPENSE, "9.00", TODAY, food.id(), "Corrected lunch");
+
+        assertTrue(updated.category().archived());
+        assertEquals(food.id(), updated.category().id());
+        assertThrows(IllegalArgumentException.class, () -> service.updateTransaction(
+                original.id(), TransactionType.EXPENSE, "9.00", TODAY, transport.id(), "Wrong archived category"));
+    }
+
+    @Test
+    void deleteTransaction_removesOnlyConfirmedTransactionAndPersists() throws IOException {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        Transaction first = transaction("10000000-0000-0000-0000-000000000010", TransactionType.EXPENSE,
+                "8.50", TODAY, food, "Lunch");
+        Transaction second = transaction("10000000-0000-0000-0000-000000000011", TransactionType.EXPENSE,
+                "1.20", TODAY.plusDays(1), food, "Drink");
+        repository = new FakeRepository(new ApplicationState(service.allCategories(), List.of(second, first)));
+        service = new TransactionService(repository, Clock.systemUTC(), UUID::randomUUID);
+
+        service.deleteTransaction(first.id());
+
+        assertEquals(List.of(second), service.transactions());
+        assertEquals(List.of(second), repository.savedState.transactions());
+    }
+
+    @Test
+    void deleteTransaction_missingTransactionDoesNotSave() {
+        assertThrows(IllegalArgumentException.class, () -> service.deleteTransaction(UUID.randomUUID()));
+
+        assertEquals(0, repository.saveCount);
+    }
+
+    @Test
     void findTransactions_sortsNewestDateFirstWithoutChangingStoredHistory() throws IOException {
         List<Transaction> stored = transactionsForHistoryTests();
         TransactionService historyService = serviceFor(stored);

@@ -75,6 +75,40 @@ public record ApplicationState(List<Category> categories, List<Transaction> tran
     }
 
     /**
+     * Returns a new state with one existing transaction replaced by the supplied corrected value.
+     *
+     * @param transaction corrected transaction retaining the existing identity
+     * @return updated immutable state
+     */
+    public ApplicationState withUpdatedTransaction(Transaction transaction) {
+        Objects.requireNonNull(transaction, "Transaction is required");
+        boolean exists = transactions.stream().anyMatch(candidate -> candidate.id().equals(transaction.id()));
+        if (!exists) {
+            throw new IllegalArgumentException("Selected transaction does not exist.");
+        }
+        return new ApplicationState(categories, transactions.stream()
+                .map(candidate -> candidate.id().equals(transaction.id()) ? transaction : candidate)
+                .toList(), budgets);
+    }
+
+    /**
+     * Returns a new state without a deliberately removed transaction.
+     *
+     * @param transactionId identity of the transaction to remove
+     * @return updated immutable state
+     */
+    public ApplicationState withoutTransaction(java.util.UUID transactionId) {
+        Objects.requireNonNull(transactionId, "Transaction is required");
+        List<Transaction> updated = transactions.stream()
+                .filter(transaction -> !transaction.id().equals(transactionId))
+                .toList();
+        if (updated.size() == transactions.size()) {
+            throw new IllegalArgumentException("Selected transaction does not exist.");
+        }
+        return new ApplicationState(categories, updated, budgets);
+    }
+
+    /**
      * Returns a new state with the supplied category appended to the category list.
      *
      * @param category validated category to add

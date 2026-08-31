@@ -10,83 +10,97 @@
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <ScrollPane fx:id="transactionsScrollPane" id="transactionsView" fitToWidth="true" hbarPolicy="NEVER" xmlns="http://javafx.com/javafx/17.0.7" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs3227.moneymap.TransactionController">
     <content>
         <VBox spacing="20" styleClass="page">
             <padding><Insets top="34" right="42" bottom="34" left="42" /></padding>
-            <HBox alignment="CENTER_LEFT">
-                <VBox spacing="4">
-                    <Label text="Transactions" styleClass="page-title" />
-                    <Label text="Review every income and expense in one place." styleClass="muted" />
-                </VBox>
-                <Label HBox.hgrow="ALWAYS" />
-                <Button fx:id="addTransactionButton" id="addTransactionButton" text="＋ Add transaction" onAction="#focusTransactionForm" styleClass="primary-button" accessibleText="Go to the add transaction form" />
-            </HBox>
-            <VBox spacing="12" styleClass="panel transaction-filter-panel">
-                <Label text="Find transactions" styleClass="section-title" />
-                <GridPane hgap="18" vgap="8">
-                    <columnConstraints>
-                        <ColumnConstraints hgrow="ALWAYS" percentWidth="25" />
-                        <ColumnConstraints hgrow="ALWAYS" percentWidth="25" />
-                        <ColumnConstraints hgrow="ALWAYS" percentWidth="25" />
-                        <ColumnConstraints hgrow="ALWAYS" percentWidth="25" />
-                    </columnConstraints>
-                    <Label fx:id="transactionMonthFilterLabel" text="Month" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                    <Label fx:id="transactionTypeFilterLabel" text="Type" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-                    <Label fx:id="transactionCategoryFilterLabel" text="Category" GridPane.columnIndex="2" GridPane.rowIndex="0" />
-                    <Label fx:id="transactionNoteSearchLabel" text="Search notes" GridPane.columnIndex="3" GridPane.rowIndex="0" />
-                    <ComboBox fx:id="transactionMonthFilter" id="transactionMonthFilter" maxWidth="Infinity" promptText="All months" accessibleText="Filter transactions by month" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                    <ComboBox fx:id="transactionTypeFilter" id="transactionTypeFilter" maxWidth="Infinity" promptText="All types" accessibleText="Filter transactions by type" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                    <ComboBox fx:id="transactionCategoryFilter" id="transactionCategoryFilter" maxWidth="Infinity" promptText="All categories" accessibleText="Filter transactions by category" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                    <TextField fx:id="transactionNoteSearchField" id="transactionNoteSearchField" promptText="Search note text" accessibleText="Search transaction notes" GridPane.columnIndex="3" GridPane.rowIndex="1" />
-                </GridPane>
-                <HBox alignment="CENTER_RIGHT">
-                    <Button fx:id="clearTransactionFiltersButton" id="clearTransactionFiltersButton" text="Clear filters" onAction="#clearTransactionFilters" styleClass="secondary-button" accessibleText="Clear all transaction filters" />
-                </HBox>
+            <VBox fx:id="transactionHistoryHeader" spacing="4">
+                <Label text="Transactions" styleClass="page-title" />
+                <Label text="Review every income and expense in one place." styleClass="muted" />
             </VBox>
-            <VBox fx:id="transactionListSection" id="transactionListSection" spacing="0" styleClass="panel transaction-table">
-                <HBox styleClass="table-header">
-                    <Label maxWidth="Infinity" text="DATE / NOTE" HBox.hgrow="ALWAYS" />
-                    <Label prefWidth="150" text="CATEGORY" />
-                    <Label prefWidth="120" text="AMOUNT" styleClass="amount-column" />
-                </HBox>
-                <VBox fx:id="transactionRows" id="transactionRows" spacing="0" />
-                <VBox fx:id="transactionEmptyState" alignment="CENTER" spacing="6" styleClass="transaction-empty-state">
-                    <Label fx:id="transactionEmptyTitle" text="No transactions recorded" styleClass="section-title" />
-                    <Label fx:id="transactionEmptyMessage" text="Use Add transaction to record your first income or expense." styleClass="muted" />
-                </VBox>
-            </VBox>
-            <VBox fx:id="transactionForm" id="transactionForm" managed="false" visible="false" spacing="16" styleClass="panel transaction-form">
-                <Label text="Add transaction" styleClass="section-title" />
-                <GridPane hgap="18" vgap="8">
-                    <columnConstraints>
-                        <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
-                        <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
-                    </columnConstraints>
-                    <Label fx:id="transactionTypeLabel" text="Type" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                    <ComboBox fx:id="transactionTypeComboBox" id="transactionTypeComboBox" maxWidth="Infinity" accessibleText="Transaction type" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                    <Label fx:id="transactionAmountLabel" text="Amount (S$)" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-                    <TextField fx:id="transactionAmountField" id="transactionAmountField" promptText="0.00" accessibleText="Transaction amount in Singapore dollars" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                    <Label fx:id="transactionDateLabel" text="Date" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                    <DatePicker fx:id="transactionDatePicker" id="transactionDatePicker" maxWidth="Infinity" accessibleText="Transaction date" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                    <Label fx:id="transactionCategoryLabel" text="Category (optional)" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                    <ComboBox fx:id="transactionCategoryComboBox" id="transactionCategoryComboBox" maxWidth="Infinity" promptText="Uncategorised" accessibleText="Transaction category, optional" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                </GridPane>
-                <VBox spacing="8">
-                    <HBox alignment="CENTER_LEFT">
-                        <Label fx:id="transactionNoteLabel" text="Note (optional)" />
-                        <Label HBox.hgrow="ALWAYS" />
-                        <Label fx:id="noteCharacterCountLabel" text="0 / 200" styleClass="muted" />
+            <StackPane>
+                <VBox fx:id="transactionLedger" spacing="20">
+                    <VBox spacing="10" styleClass="transaction-query-area">
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                                <Label fx:id="transactionNoteSearchLabel" text="Search transactions" styleClass="visually-hidden" />
+                                <TextField fx:id="transactionNoteSearchField" id="transactionNoteSearchField" promptText="Search notes" accessibleText="Search transaction notes" />
+                            </VBox>
+                            <Button fx:id="transactionFilterToggleButton" id="transactionFilterToggleButton" text="Filter &amp; sort" onAction="#toggleTransactionFilters" styleClass="secondary-button" accessibleText="Show or hide transaction filters" />
+                        </HBox>
+                        <VBox fx:id="transactionFilterPanel" id="transactionFilterPanel" managed="false" visible="false" spacing="12" styleClass="panel transaction-filter-panel">
+                            <Label text="Filter transactions" styleClass="section-title" />
+                            <GridPane hgap="18" vgap="8">
+                                <columnConstraints>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" />
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" />
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="33.34" />
+                                </columnConstraints>
+                                <Label fx:id="transactionMonthFilterLabel" text="Month" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                <Label fx:id="transactionTypeFilterLabel" text="Type" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                                <Label fx:id="transactionCategoryFilterLabel" text="Category" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                                <ComboBox fx:id="transactionMonthFilter" id="transactionMonthFilter" maxWidth="Infinity" promptText="All months" accessibleText="Filter transactions by month" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                <ComboBox fx:id="transactionTypeFilter" id="transactionTypeFilter" maxWidth="Infinity" promptText="All types" accessibleText="Filter transactions by type" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                <ComboBox fx:id="transactionCategoryFilter" id="transactionCategoryFilter" maxWidth="Infinity" promptText="All categories" accessibleText="Filter transactions by category" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                            </GridPane>
+                            <HBox alignment="CENTER_RIGHT">
+                                <Button fx:id="clearTransactionFiltersButton" id="clearTransactionFiltersButton" text="Clear filters" onAction="#clearTransactionFilters" styleClass="secondary-button" accessibleText="Clear all transaction filters" />
+                            </HBox>
+                        </VBox>
+                    </VBox>
+                    <HBox fx:id="transactionLedgerActions" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="12">
+                        <Label text="Your transactions" styleClass="section-title" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button fx:id="addTransactionButton" id="addTransactionButton" text="＋ Add transaction" onAction="#focusTransactionForm" styleClass="primary-button" accessibleText="Go to the add transaction form" />
                     </HBox>
-                    <TextArea fx:id="transactionNoteArea" id="transactionNoteArea" prefRowCount="3" wrapText="true" promptText="e.g. lunch with classmates" accessibleText="Optional transaction note, maximum 200 characters" />
+                    <VBox fx:id="transactionListSection" id="transactionListSection" spacing="0" styleClass="panel transaction-table">
+                        <VBox fx:id="transactionRows" id="transactionRows" spacing="0" />
+                        <VBox fx:id="transactionEmptyState" alignment="CENTER" spacing="6" styleClass="transaction-empty-state">
+                            <Label fx:id="transactionEmptyTitle" text="No transactions recorded" styleClass="section-title" />
+                            <Label fx:id="transactionEmptyMessage" text="Use Add transaction to record your first income or expense." styleClass="muted" />
+                        </VBox>
+                    </VBox>
                 </VBox>
-                <Label fx:id="transactionValidationLabel" id="transactionValidationLabel" managed="false" visible="false" wrapText="true" styleClass="validation-error" />
-                <HBox alignment="CENTER_RIGHT" spacing="10">
-                    <Button fx:id="cancelTransactionButton" id="cancelTransactionButton" text="Cancel" cancelButton="true" onAction="#cancelTransaction" styleClass="secondary-button" accessibleText="Cancel adding transaction" />
-                    <Button fx:id="saveTransactionButton" id="saveTransactionButton" text="Save transaction" defaultButton="true" onAction="#saveTransaction" styleClass="primary-button" accessibleText="Save transaction" />
-                </HBox>
-            </VBox>
+                <VBox fx:id="transactionForm" id="transactionForm" managed="false" visible="false" spacing="16" styleClass="panel transaction-form transaction-form-page">
+                    <HBox alignment="CENTER_LEFT">
+                        <Button fx:id="backToTransactionsButton" id="backToTransactionsButton" text="← Back to transactions" cancelButton="true" onAction="#cancelTransaction" styleClass="text-button" accessibleText="Discard changes and return to transactions" />
+                    </HBox>
+                    <VBox spacing="4">
+                        <Label fx:id="transactionFormTitle" text="Add transaction" styleClass="page-title" />
+                        <Label text="Record an income or expense." styleClass="muted" />
+                    </VBox>
+                    <GridPane hgap="18" vgap="8">
+                        <columnConstraints>
+                            <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                            <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                        </columnConstraints>
+                        <Label fx:id="transactionTypeLabel" text="Type" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <ComboBox fx:id="transactionTypeComboBox" id="transactionTypeComboBox" maxWidth="Infinity" accessibleText="Transaction type" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <Label fx:id="transactionAmountLabel" text="Amount (S$)" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        <TextField fx:id="transactionAmountField" id="transactionAmountField" promptText="0.00" accessibleText="Transaction amount in Singapore dollars" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <Label fx:id="transactionDateLabel" text="Date" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                        <DatePicker fx:id="transactionDatePicker" id="transactionDatePicker" maxWidth="Infinity" accessibleText="Transaction date" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                        <Label fx:id="transactionCategoryLabel" text="Category (optional)" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                        <ComboBox fx:id="transactionCategoryComboBox" id="transactionCategoryComboBox" maxWidth="Infinity" promptText="Uncategorised" accessibleText="Transaction category, optional" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                    </GridPane>
+                    <VBox spacing="8">
+                        <HBox alignment="CENTER_LEFT">
+                            <Label fx:id="transactionNoteLabel" text="Note (optional)" />
+                            <Label HBox.hgrow="ALWAYS" />
+                            <Label fx:id="noteCharacterCountLabel" text="0 / 200" styleClass="muted" />
+                        </HBox>
+                        <TextArea fx:id="transactionNoteArea" id="transactionNoteArea" prefRowCount="3" wrapText="true" promptText="e.g. lunch with classmates" accessibleText="Optional transaction note, maximum 200 characters" />
+                    </VBox>
+                    <Label fx:id="transactionValidationLabel" id="transactionValidationLabel" managed="false" visible="false" wrapText="true" styleClass="validation-error" />
+                    <HBox alignment="CENTER_RIGHT" spacing="10">
+                        <Button fx:id="cancelTransactionButton" id="cancelTransactionButton" text="Cancel" cancelButton="true" onAction="#cancelTransaction" styleClass="secondary-button" accessibleText="Cancel transaction changes" />
+                        <Button fx:id="saveTransactionButton" id="saveTransactionButton" text="Save transaction" defaultButton="true" onAction="#saveTransaction" styleClass="primary-button" accessibleText="Save transaction" />
+                    </HBox>
+                </VBox>
+            </StackPane>
         </VBox>
     </content>
 </ScrollPane>

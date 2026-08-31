@@ -445,6 +445,44 @@ public final class TransactionService {
         return transaction;
     }
 
+    /**
+     * Validates, persists, and publishes a correction to an existing transaction.
+     *
+     * @param transactionId transaction identity to correct
+     * @param type selected transaction type
+     * @param amount plain SGD amount input
+     * @param date required transaction date
+     * @param categoryId optional category identity; null selects the matching fallback
+     * @param note optional transaction note
+     * @return persisted corrected transaction
+     */
+    public Transaction updateTransaction(UUID transactionId, TransactionType type, String amount, LocalDate date,
+                                         UUID categoryId, String note) {
+        Objects.requireNonNull(transactionId, "Selected transaction is required.");
+        Objects.requireNonNull(type, "Select Income or Expense.");
+        Objects.requireNonNull(date, "Select a transaction date.");
+        Transaction existing = requireTransaction(transactionId);
+        Transaction updated = new Transaction(
+                transactionId, type, MoneyAmount.parse(amount), date,
+                resolveCategoryForUpdate(type, categoryId, existing), note);
+        ApplicationState candidate = state.withUpdatedTransaction(updated);
+        persist(candidate);
+        state = candidate;
+        return updated;
+    }
+
+    /**
+     * Persists the deliberate permanent removal of one transaction.
+     *
+     * @param transactionId transaction identity to remove
+     */
+    public void deleteTransaction(UUID transactionId) {
+        Objects.requireNonNull(transactionId, "Selected transaction is required.");
+        ApplicationState candidate = state.withoutTransaction(transactionId);
+        persist(candidate);
+        state = candidate;
+    }
+
     /** Resolves an omitted category to the matching fallback and rejects incompatible selections. */
     private Category resolveCategory(TransactionType type, UUID categoryId) {
         if (categoryId == null) {
@@ -461,6 +499,25 @@ public final class TransactionService {
             throw new IllegalArgumentException("Archived categories cannot be used for new transactions.");
         }
         return category;
+    }
+
+    /**
+     * Retains an existing archived historical category during a correction while rejecting new archived choices.
+     */
+    private Category resolveCategoryForUpdate(TransactionType type, UUID categoryId, Transaction existing) {
+        if (categoryId != null && categoryId.equals(existing.category().id())
+                && existing.category().type() == type && existing.category().archived()) {
+            return existing.category();
+        }
+        return resolveCategory(type, categoryId);
+    }
+
+    /** Returns the existing transaction identified by the supplied ID. */
+    private Transaction requireTransaction(UUID transactionId) {
+        return state.transactions().stream()
+                .filter(transaction -> transaction.id().equals(transactionId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Selected transaction does not exist."));
     }
 
     /** Finds a category and protects both permanent fallback categories from lifecycle changes. */
