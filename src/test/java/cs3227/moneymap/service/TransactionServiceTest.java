@@ -42,6 +42,46 @@ class TransactionServiceTest {
     }
 
     @Test
+    void importBackup_replacesRatherThanMergesOnlyAfterTheReplacementIsSaved() throws IOException {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        service.createTransaction(TransactionType.EXPENSE, "8.50", TODAY, food.id(), "Old local transaction");
+        ApplicationState imported = ApplicationState.withStarterCategories().withCategory(
+                new Category(UUID.randomUUID(), TransactionType.EXPENSE, "Imported", false));
+        repository.importedState = imported;
+
+        service.importBackup(Path.of("backup.json"));
+
+        assertEquals(imported, repository.savedState);
+        assertTrue(service.transactions().isEmpty());
+        assertTrue(service.allCategories().stream().anyMatch(category -> category.name().equals("Imported")));
+    }
+
+    @Test
+    void importBackup_validationOrSaveFailure_doesNotPublishPartialReplacement() {
+        ApplicationState before = ApplicationState.withStarterCategories();
+        repository.failImport = true;
+
+        assertThrows(PersistenceException.class, () -> service.importBackup(Path.of("broken.json")));
+
+        assertEquals(before, new ApplicationState(service.allCategories(), service.transactions()));
+        assertEquals(0, repository.saveCount);
+    }
+
+    @Test
+    void importBackup_saveFailure_doesNotPublishValidatedReplacement() {
+        ApplicationState before = ApplicationState.withStarterCategories();
+        ApplicationState imported = before.withCategory(
+                new Category(UUID.randomUUID(), TransactionType.EXPENSE, "Imported", false));
+        repository.importedState = imported;
+        repository.failSave = true;
+
+        assertThrows(PersistenceException.class, () -> service.importBackup(Path.of("backup.json")));
+
+        assertEquals(before, new ApplicationState(service.allCategories(), service.transactions()));
+        assertEquals(1, repository.saveCount);
+    }
+
+    @Test
     void categoriesFor_returnsOnlyMatchingType() {
         assertTrue(service.categoriesFor(TransactionType.INCOME).stream()
                 .allMatch(category -> category.type() == TransactionType.INCOME));
@@ -611,8 +651,10 @@ class TransactionServiceTest {
     private static final class FakeRepository implements DataRepository {
         private final ApplicationState loadedState;
         private ApplicationState savedState;
+        private ApplicationState importedState;
         private int saveCount;
         private boolean failSave;
+        private boolean failImport;
 
         private FakeRepository(ApplicationState loadedState) {
             this.loadedState = loadedState;
@@ -635,6 +677,14 @@ class TransactionServiceTest {
         @Override
         public void export(ApplicationState state, Path destination) {
             // Export behaviour is exercised against the real JSON repository.
+        }
+
+        @Override
+        public ApplicationState importBackup(Path source) throws IOException {
+            if (failImport) {
+                throw new IOException("simulated import failure");
+            }
+            return importedState;
         }
     }
 }

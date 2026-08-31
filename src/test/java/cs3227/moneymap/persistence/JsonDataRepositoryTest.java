@@ -340,6 +340,55 @@ class JsonDataRepositoryTest {
         assertEquals(saved, repository.load().state());
     }
 
+    @Test
+    void importBackup_completeValidState_returnsAllArchivedAndBudgetData() throws IOException {
+        JsonDataRepository source = new JsonDataRepository(applicationDirectory);
+        ApplicationState expected = stateWithArchivedCategoryTransactionAndBudget();
+        Path backupFile = Files.createTempDirectory("moneymap-import-").resolve("backup.json");
+        source.export(expected, backupFile);
+
+        ApplicationState imported = new JsonDataRepository(Files.createTempDirectory("moneymap-import-local-"))
+                .importBackup(backupFile);
+
+        assertEquals(expected, imported);
+    }
+
+    @Test
+    void importBackup_emptyValidState_returnsStarterCategoriesWithoutTransactionsOrBudgets() throws IOException {
+        JsonDataRepository source = new JsonDataRepository(applicationDirectory);
+        Path backupFile = Files.createTempDirectory("moneymap-empty-import-").resolve("backup.json");
+        ApplicationState expected = ApplicationState.withStarterCategories();
+        source.export(expected, backupFile);
+
+        ApplicationState imported = new JsonDataRepository(Files.createTempDirectory("moneymap-empty-local-"))
+                .importBackup(backupFile);
+
+        assertEquals(expected, imported);
+        assertTrue(imported.transactions().isEmpty());
+        assertTrue(imported.budgets().isEmpty());
+    }
+
+    @Test
+    void importBackup_invalidForms_rejectWithoutChangingLocalData() throws IOException {
+        JsonDataRepository repository = new JsonDataRepository(applicationDirectory);
+        ApplicationState local = stateWithExpense();
+        repository.save(local);
+        Path malformed = Files.createTempDirectory("moneymap-invalid-import-").resolve("broken.json");
+        Files.writeString(malformed, "{not-json", StandardCharsets.UTF_8);
+        Path futureVersion = malformed.resolveSibling("future.json");
+        Files.writeString(futureVersion, "{\"version\":2,\"categories\":[],\"transactions\":[]}",
+                StandardCharsets.UTF_8);
+        Path invalidDate = malformed.resolveSibling("invalid-date.json");
+        repository.export(stateWithExpense(), invalidDate);
+        replaceSavedDate(invalidDate);
+
+        assertThrows(IOException.class, () -> repository.importBackup(malformed));
+        assertThrows(IOException.class, () -> repository.importBackup(futureVersion));
+        assertThrows(IOException.class, () -> repository.importBackup(invalidDate));
+
+        assertEquals(local, repository.load().state());
+    }
+
     private static ApplicationState stateWithExpense() {
         ApplicationState initial = ApplicationState.withStarterCategories();
         Category food = initial.categories().stream()

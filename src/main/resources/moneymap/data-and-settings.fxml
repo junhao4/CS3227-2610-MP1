@@ -13,4 +13,10 @@
         <Button fx:id="exportButton" id="exportButton" text="Export backup…" onAction="#chooseBackupDestination" accessibleText="Export complete MoneyMap backup" styleClass="primary-button" />
         <Label fx:id="exportFeedback" id="exportFeedback" managed="false" visible="false" wrapText="true" />
     </VBox>
+    <VBox spacing="8" styleClass="empty-panel">
+        <Label text="Import backup" styleClass="section-title" />
+        <Label text="Restore a complete backup after confirming that it will replace all current MoneyMap data." styleClass="muted" wrapText="true" />
+        <Button fx:id="importButton" id="importButton" text="Import backup…" onAction="#chooseBackupSource" accessibleText="Import and replace MoneyMap backup" styleClass="primary-button" />
+        <Label fx:id="importFeedback" id="importFeedback" managed="false" visible="false" wrapText="true" />
+    </VBox>
 </VBox>

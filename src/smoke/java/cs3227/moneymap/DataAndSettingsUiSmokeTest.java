@@ -45,9 +45,13 @@ public class DataAndSettingsUiSmokeTest extends Application {
             stage.show();
 
             Button exportButton = requireNode(view, "exportButton", Button.class);
+            Button importButton = requireNode(view, "importButton", Button.class);
             Label feedback = requireNode(view, "exportFeedback", Label.class);
+            Label importFeedback = requireNode(view, "importFeedback", Label.class);
             require("Export backup…".equals(exportButton.getText()), "Export control is not visibly labelled");
             require(exportButton.getAccessibleText().contains("complete"), "Export control lacks accessible text");
+            require("Import backup…".equals(importButton.getText()), "Import control is not visibly labelled");
+            require(importButton.getAccessibleText().contains("replace"), "Import control lacks accessible text");
 
             Path backupFile = backupDirectory.resolve("data").resolve("moneymap.json");
             controller.exportTo(backupFile);
@@ -62,6 +66,22 @@ public class DataAndSettingsUiSmokeTest extends Application {
             assertFeedback(feedback, "could not be exported", "validation-error");
             assertEquals(local, new JsonDataRepository(applicationDirectory).load().state(),
                     "Failed export altered current local data");
+
+            Path importDirectory = Files.createTempDirectory("moneymap-import-source-");
+            Path importFile = importDirectory.resolve("data").resolve("moneymap.json");
+            ApplicationState imported = ApplicationState.withStarterCategories();
+            new JsonDataRepository(Files.createTempDirectory("moneymap-import-exporter-"))
+                    .export(imported, importFile);
+            controller.importFrom(importFile);
+
+            assertFeedback(importFeedback, "Backup imported", "positive");
+            assertEquals(imported, new JsonDataRepository(applicationDirectory).load().state(),
+                    "Confirmed import did not replace current local data");
+
+            controller.importFrom(importDirectory);
+            assertFeedback(importFeedback, "could not be imported", "validation-error");
+            assertEquals(imported, new JsonDataRepository(applicationDirectory).load().state(),
+                    "Failed import altered current local data");
             System.out.println("Verified Data and Settings backup export success and failure feedback");
         } finally {
             stage.close();

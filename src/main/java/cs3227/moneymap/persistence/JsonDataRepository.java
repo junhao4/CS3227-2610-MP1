@@ -118,6 +118,20 @@ public final class JsonDataRepository implements DataRepository {
         Files.writeString(backupFile, GSON.toJson(toPersistedState(state)), StandardCharsets.UTF_8);
     }
 
+    @Override
+    public ApplicationState importBackup(Path source) throws IOException {
+        Objects.requireNonNull(source, "Backup source is required");
+        Path backupFile = source.toAbsolutePath().normalize();
+        if (Files.isDirectory(backupFile)) {
+            throw new IOException("Choose a backup file, not a directory.");
+        }
+        try {
+            return readState(backupFile);
+        } catch (JsonParseException | IllegalArgumentException | NullPointerException | DateTimeException exception) {
+            throw new IOException("The selected backup is invalid or uses an unsupported version.", exception);
+        }
+    }
+
     Path dataFile() {
         return dataFile;
     }

@@ -3,8 +3,8 @@
 MoneyMap is a local JavaFX desktop application for recording Income and Expense
 transactions in Singapore dollars. The current build provides transaction
 creation, transaction-history review, category management, monthly expense
-budgets, Dashboard summaries, automatic local persistence, and complete local
-backup export inside the production application shell.
+budgets, Dashboard summaries, automatic local persistence, complete local
+backup export, and confirmed replacement import inside the production shell.
 
 ## Setup
 
@@ -43,8 +43,8 @@ Use the navigation controls on the left to open an area:
 - **Categories and Budgets** — creates, renames, archives, restores,
   reassigns, and deletes custom Income and Expense categories, and configures
   monthly budgets for Expense categories.
-- **Data and Settings** — exports a complete local backup. Import and other
-  data-management tools are not available yet.
+- **Data and Settings** — exports a complete local backup and imports a valid
+  backup after replacement confirmation.
 
 Click a navigation control, or press Tab until it has focus. On macOS, activate
 a focused control with Space. On Windows and Linux, use Enter or Space.
@@ -301,8 +301,7 @@ Do not edit `moneymap.json` while MoneyMap is running. If the file is malformed
 or has an unsupported version, MoneyMap preserves it under a recoverable name
 such as `moneymap.json.corrupt`, displays a data-recovery warning, and starts
 with no transactions and the starter categories. Keep the preserved file if
-you need to investigate or recover its contents manually; in-app import and
-restore are not available yet.
+you need to investigate it or restore a separate valid backup.
 
 ## Export a complete backup
 
@@ -318,8 +317,18 @@ written, MoneyMap displays clear text feedback and keeps the current local data
 unchanged. Do not select the active `data/moneymap.json` file as the backup
 destination.
 
-MoneyMap cannot import or restore a backup yet. Keep the exported file in a
-safe location until the separate import feature is available.
+## Import and replace a backup
+
+Open **Data and Settings** and select **Import backup…**. Choose a valid
+MoneyMap `.json` backup in the standard open dialog. MoneyMap validates the
+entire backup before asking whether to replace the current data. Select
+**Replace data** only when you are ready: all current categories, archived
+states, transactions, and budgets are replaced by the backup; nothing is
+merged.
+
+Select **Cancel** in the confirmation dialog to keep the current data. A
+malformed, invalid, or incompatible backup is rejected with text feedback and
+does not change the data currently shown in MoneyMap or its local data file.
 
 ## Keyboard and accessibility
 
@@ -333,8 +342,9 @@ safe location until the separate import feature is available.
   returns focus to **＋ Add transaction**.
 - The budget editor's month arrows have accessible previous- and next-month
   labels, and **← Back to categories** returns from the focused budget screen.
-- **Export backup…** has a visible label and accessible description. The native
-  save dialog is operated with the platform's normal keyboard controls.
+- **Export backup…** and **Import backup…** have visible labels and accessible
+  descriptions. Their native file dialogs use normal platform keyboard
+  controls; the replacement dialog provides confirmation and cancellation.
 - Validation is communicated with text, not colour alone.
 - On macOS, use Space to activate a focused ordinary button. On Windows and
   Linux, use Enter or Space. **Save transaction** is the form's default action.
@@ -348,13 +358,12 @@ interaction still require manual checking on those target platforms.
 
 The current build supports recording, reviewing, filtering, and searching
 Income and Expense transactions, managing categories, configuring monthly
-Expense budgets, Dashboard summaries, local persistence, and complete backup
-export. It does not yet support:
+Expense budgets, Dashboard summaries, local persistence, complete backup
+export, and confirmed replacement import. It does not yet support:
 
-- import or backup restoration;
 - wallets, transfers, accounts, bank synchronisation, or specialised
   investment, loan, or credit-card behavior; or
 - cloud synchronisation, authentication, or multi-currency values.
 
-Data and Settings currently provides export only; its remaining data-management
-tools are planned for later increments.
+Data and Settings does not support merge import, cloud synchronization, or
+automatically importing bank data.

@@ -370,16 +370,19 @@ asks `TransactionService` to export its current immutable state through
 `DataRepository`. `JsonDataRepository` rejects the active data file and its
 temporary file as destinations, writes only the selected backup path, and
 reports an I/O failure without changing the active in-memory or local state.
-Import remains deliberately out of scope for this slice.
+For import, the controller validates the selected complete backup before it
+shows the standard replacement confirmation. On confirmation, the service
+reads and validates the file again, saves that complete candidate state, and
+only then publishes it in memory. Thus a validation or save failure leaves the
+old state intact; import replaces rather than merges.
 
 Loading validates the schema version, required lists and fields, UUID and enum
 values, duplicate IDs, amount/date/note invariants, fallback categories, and
 transaction category references. Malformed data, an unsupported version, or an
 invalid relationship causes the main file to be moved to a free recoverable
 name beginning with `moneymap.json.corrupt`. MoneyMap then exposes a recovery
-warning and starts with the seeded safe state. In-app import and restoration
-are not implemented, so the preserved file must be retained for manual
-investigation or a later recovery feature.
+warning and starts with the seeded safe state. A user can then restore a valid
+backup through Data and Settings.
 
 ## Testing strategy and evidence
 
@@ -625,8 +628,19 @@ Use a disposable directory so the test cannot alter personal data.
    unchanged.
 5. Attempt an export to an unwritable location or a directory. Confirm clear
    failure feedback and verify the existing `data/moneymap.json` is unchanged.
-6. Do not choose the active `data/moneymap.json` file. Import and restoration
-   are not available in this increment.
+6. Do not choose the active `data/moneymap.json` file.
+
+### Import and replace a backup
+
+1. Start with disposable data different from the exported backup.
+2. Open **Data and Settings**, focus **Import backup…**, and choose the valid
+   backup in the native open dialog.
+3. Confirm the replacement dialog explains that all current data will be
+   replaced. Select **Cancel** and verify current data is unchanged.
+4. Repeat the import and select **Replace data**. Confirm categories, archived
+   states, transactions, and budgets match the backup with no merged records.
+5. Choose malformed JSON and an unsupported-version file. Confirm clear text
+   feedback and that the previous data remains unchanged.
 
 ### Recovery from invalid local data
 
@@ -639,7 +653,8 @@ Perform this only in the disposable test directory.
    no transactions and the starter categories, and the invalid main file has
    been preserved under a name beginning with `moneymap.json.corrupt`.
 5. Retain or remove the disposable directory after testing. Do not replace
-   personal data with the test file; in-app restore is unavailable.
+   personal data with the test file; use **Import backup…** with a separately
+   verified valid backup when testing restoration.
 
 ### Recovery from an interrupted first save
 

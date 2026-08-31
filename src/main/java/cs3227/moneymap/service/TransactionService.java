@@ -531,6 +531,34 @@ public final class TransactionService {
     }
 
     /**
+     * Reads and completely validates a backup without changing the current application state.
+     *
+     * @param source user-selected backup file
+     * @return complete validated backup state
+     * @throws PersistenceException if the backup cannot be read or is invalid
+     */
+    public ApplicationState validateBackup(Path source) {
+        Objects.requireNonNull(source, "Backup source is required.");
+        try {
+            return repository.importBackup(source);
+        } catch (IOException exception) {
+            throw new PersistenceException("MoneyMap could not import that backup.", exception);
+        }
+    }
+
+    /**
+     * Replaces all current local data with a newly read and fully validated backup.
+     *
+     * @param source user-selected backup file
+     * @throws PersistenceException if validation or replacement persistence fails
+     */
+    public void importBackup(Path source) {
+        ApplicationState candidate = validateBackup(source);
+        persist(candidate);
+        state = candidate;
+    }
+
+    /**
      * Validates, persists, and publishes a transaction.
      *
      * @param type selected transaction type

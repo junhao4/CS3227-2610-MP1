@@ -31,4 +31,13 @@ public interface DataRepository {
      * @throws IOException if the destination cannot receive the backup
      */
     void export(ApplicationState state, Path destination) throws IOException;
+
+    /**
+     * Reads and completely validates an independent backup without changing active local data.
+     *
+     * @param source user-selected backup file
+     * @return validated immutable backup state
+     * @throws IOException if the backup cannot be read or is invalid
+     */
+    ApplicationState importBackup(Path source) throws IOException;
 }
