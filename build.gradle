@@ -114,6 +114,13 @@ tasks.register('verifyCategoryUi', JavaExec) {
     mainClass = 'cs3227.moneymap.CategoryUiSmokeTest'
 }
 
+tasks.register('verifyDataAndSettingsUi', JavaExec) {
+    group = 'verification'
+    description = 'Verifies Data and Settings backup export and user feedback in JavaFX.'
+    classpath = sourceSets.smoke.runtimeClasspath
+    mainClass = 'cs3227.moneymap.DataAndSettingsUiSmokeTest'
+}
+
 tasks.named('check') {
     dependsOn tasks.named('checkstyleMain')
     dependsOn tasks.named('checkstyleTest')
@@ -123,6 +130,7 @@ tasks.named('check') {
     dependsOn tasks.named('verifyDashboardUi')
     dependsOn tasks.named('verifyTransactionUi')
     dependsOn tasks.named('verifyCategoryUi')
+    dependsOn tasks.named('verifyDataAndSettingsUi')
 }
 
 tasks.named('shadowJar') {

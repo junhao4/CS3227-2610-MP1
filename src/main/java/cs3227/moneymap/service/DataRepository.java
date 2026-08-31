@@ -3,6 +3,7 @@ package cs3227.moneymap.service;
 import cs3227.moneymap.domain.ApplicationState;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 /** Loads and atomically saves MoneyMap application state. */
 public interface DataRepository {
@@ -21,4 +22,13 @@ public interface DataRepository {
      * @throws IOException if the state cannot be saved
      */
     void save(ApplicationState state) throws IOException;
+
+    /**
+     * Writes a complete independent backup without changing the active local data file.
+     *
+     * @param state immutable application state to export
+     * @param destination user-selected backup file
+     * @throws IOException if the destination cannot receive the backup
+     */
+    void export(ApplicationState state, Path destination) throws IOException;
 }

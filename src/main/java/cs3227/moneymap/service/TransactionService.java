@@ -10,6 +10,7 @@ import cs3227.moneymap.domain.TransactionType;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -512,6 +513,21 @@ public final class TransactionService {
      */
     public String startupWarning() {
         return startupWarning;
+    }
+
+    /**
+     * Writes the current complete application state to a user-selected backup file.
+     *
+     * @param destination backup file destination
+     * @throws PersistenceException if the backup cannot be written
+     */
+    public void exportBackup(Path destination) {
+        Objects.requireNonNull(destination, "Backup destination is required.");
+        try {
+            repository.export(state, destination);
+        } catch (IOException exception) {
+            throw new PersistenceException("MoneyMap could not export the backup.", exception);
+        }
     }
 
     /**

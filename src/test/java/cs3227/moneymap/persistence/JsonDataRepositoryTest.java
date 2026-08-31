@@ -300,6 +300,46 @@ class JsonDataRepositoryTest {
         assertEquals(validJson, Files.readString(repository.dataFile(), StandardCharsets.UTF_8));
     }
 
+    @Test
+    void export_completeState_writesVersionedBackupThatCanBeLoadedIndependently() throws IOException {
+        JsonDataRepository repository = new JsonDataRepository(applicationDirectory);
+        ApplicationState state = stateWithArchivedCategoryTransactionAndBudget();
+        Path backupDirectory = Files.createTempDirectory("moneymap-export-");
+        Path backupFile = backupDirectory.resolve("data").resolve("moneymap.json");
+
+        repository.export(state, backupFile);
+
+        assertEquals(state, new JsonDataRepository(backupDirectory).load().state());
+        assertTrue(Files.readString(backupFile, StandardCharsets.UTF_8).contains("\"version\": 1"));
+    }
+
+    @Test
+    void export_starterState_writesAnEmptyButValidBackup() throws IOException {
+        JsonDataRepository repository = new JsonDataRepository(applicationDirectory);
+        Path backupDirectory = Files.createTempDirectory("moneymap-empty-export-");
+        Path backupFile = backupDirectory.resolve("data").resolve("moneymap.json");
+
+        repository.export(ApplicationState.withStarterCategories(), backupFile);
+
+        ApplicationState exported = new JsonDataRepository(backupDirectory).load().state();
+        assertEquals(14, exported.categories().size());
+        assertTrue(exported.transactions().isEmpty());
+        assertTrue(exported.budgets().isEmpty());
+    }
+
+    @Test
+    void export_writeFailure_preservesCurrentLocalData() throws IOException {
+        JsonDataRepository repository = new JsonDataRepository(applicationDirectory);
+        ApplicationState saved = stateWithExpense();
+        repository.save(saved);
+        String localJson = Files.readString(repository.dataFile(), StandardCharsets.UTF_8);
+
+        assertThrows(IOException.class, () -> repository.export(saved, applicationDirectory));
+
+        assertEquals(localJson, Files.readString(repository.dataFile(), StandardCharsets.UTF_8));
+        assertEquals(saved, repository.load().state());
+    }
+
     private static ApplicationState stateWithExpense() {
         ApplicationState initial = ApplicationState.withStarterCategories();
         Category food = initial.categories().stream()
@@ -310,6 +350,23 @@ class JsonDataRepositoryTest {
                 UUID.fromString("30000000-0000-0000-0000-000000000001"), TransactionType.EXPENSE,
                 MoneyAmount.parse("8.50"), LocalDate.of(2026, 8, 30), food, "Lunch");
         return initial.withTransaction(transaction);
+    }
+
+    private static ApplicationState stateWithArchivedCategoryTransactionAndBudget() {
+        ApplicationState initial = ApplicationState.withStarterCategories();
+        Category food = initial.categories().stream()
+                .filter(category -> category.name().equals("Food"))
+                .findFirst()
+                .orElseThrow();
+        Category archivedFood = new Category(food.id(), food.type(), "Meals", false, true);
+        Transaction transaction = new Transaction(
+                UUID.fromString("40000000-0000-0000-0000-000000000001"), TransactionType.EXPENSE,
+                MoneyAmount.parse("42.50"), LocalDate.of(2026, 8, 30), archivedFood, "Archived category");
+        return new ApplicationState(
+                initial.categories().stream().map(category -> category.id().equals(food.id()) ? archivedFood : category)
+                        .toList(),
+                java.util.List.of(transaction),
+                java.util.List.of(Budget.recurring(archivedFood.id(), MoneyAmount.parse("200"))));
     }
 
     private static void replaceSavedDate(Path savedFile) throws IOException {

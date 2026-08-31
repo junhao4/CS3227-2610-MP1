@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -629,6 +630,11 @@ class TransactionServiceTest {
                 throw new IOException("simulated save failure");
             }
             savedState = state;
+        }
+
+        @Override
+        public void export(ApplicationState state, Path destination) {
+            // Export behaviour is exercised against the real JSON repository.
         }
     }
 }

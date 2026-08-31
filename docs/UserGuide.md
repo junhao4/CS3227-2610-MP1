@@ -3,8 +3,8 @@
 MoneyMap is a local JavaFX desktop application for recording Income and Expense
 transactions in Singapore dollars. The current build provides transaction
 creation, transaction-history review, category management, monthly expense
-budgets, Dashboard summaries, and automatic local persistence inside the
-production application shell.
+budgets, Dashboard summaries, automatic local persistence, and complete local
+backup export inside the production application shell.
 
 ## Setup
 
@@ -43,7 +43,8 @@ Use the navigation controls on the left to open an area:
 - **Categories and Budgets** — creates, renames, archives, restores,
   reassigns, and deletes custom Income and Expense categories, and configures
   monthly budgets for Expense categories.
-- **Data and Settings** — placeholder for backup and data-management tools.
+- **Data and Settings** — exports a complete local backup. Import and other
+  data-management tools are not available yet.
 
 Click a navigation control, or press Tab until it has focus. On macOS, activate
 a focused control with Space. On Windows and Linux, use Enter or Space.
@@ -303,6 +304,23 @@ with no transactions and the starter categories. Keep the preserved file if
 you need to investigate or recover its contents manually; in-app import and
 restore are not available yet.
 
+## Export a complete backup
+
+Open **Data and Settings** and select **Export backup…**. Choose a writable
+file name and location in the standard save dialog; use a `.json` file name.
+MoneyMap confirms the selected file name after a successful export.
+
+The backup is a versioned JSON document containing all current categories,
+including archived state, transactions, budgets, and the metadata needed for a
+future restoration. Exporting does not change the live `data/moneymap.json`
+file or the data currently shown in MoneyMap. If the location cannot be
+written, MoneyMap displays clear text feedback and keeps the current local data
+unchanged. Do not select the active `data/moneymap.json` file as the backup
+destination.
+
+MoneyMap cannot import or restore a backup yet. Keep the exported file in a
+safe location until the separate import feature is available.
+
 ## Keyboard and accessibility
 
 - Transaction-entry and history-filter controls have visible labels and
@@ -315,6 +333,8 @@ restore are not available yet.
   returns focus to **＋ Add transaction**.
 - The budget editor's month arrows have accessible previous- and next-month
   labels, and **← Back to categories** returns from the focused budget screen.
+- **Export backup…** has a visible label and accessible description. The native
+  save dialog is operated with the platform's normal keyboard controls.
 - Validation is communicated with text, not colour alone.
 - On macOS, use Space to activate a focused ordinary button. On Windows and
   Linux, use Enter or Space. **Save transaction** is the form's default action.
@@ -328,12 +348,13 @@ interaction still require manual checking on those target platforms.
 
 The current build supports recording, reviewing, filtering, and searching
 Income and Expense transactions, managing categories, configuring monthly
-Expense budgets, Dashboard summaries, and local persistence. It does not yet
-support:
+Expense budgets, Dashboard summaries, local persistence, and complete backup
+export. It does not yet support:
 
-- import or export;
+- import or backup restoration;
 - wallets, transfers, accounts, bank synchronisation, or specialised
   investment, loan, or credit-card behavior; or
 - cloud synchronisation, authentication, or multi-currency values.
 
-Data and Settings remains a placeholder for a later increment.
+Data and Settings currently provides export only; its remaining data-management
+tools are planned for later increments.

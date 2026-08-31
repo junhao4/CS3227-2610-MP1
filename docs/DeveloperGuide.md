@@ -10,7 +10,7 @@ project checks from the repository root:
 ./gradlew clean check build verifyPrototypes javadoc
 ```
 
-`check` runs the Checkstyle gates, JUnit suite, and all three production smoke
+`check` runs the Checkstyle gates, JUnit suite, and all production smoke
 executables:
 
 - `checkstyleMain`, `checkstyleTest`, `checkstyleSmoke`, and
@@ -37,6 +37,10 @@ executables:
   explicit-zero and invalid-amount feedback, budget removal and scope
   preservation, stable category-card sizing and progress visibility,
   blocked-deletion feedback, archived-category filtering, and reload.
+- `verifyDataAndSettingsUi` loads the real Data and Settings FXML with a
+  temporary data directory. It verifies the visible and accessible export
+  control, complete-state backup round-trip, success feedback, failure
+  feedback, and preservation of current local data after a failed export.
 
 `verifyPrototypes` separately verifies that all nine exploratory prototype
 FXML resources still load. It does not test production behavior.
@@ -51,6 +55,7 @@ are:
 ./gradlew test --tests 'cs3227.moneymap.persistence.*'
 ./gradlew verifyTransactionUi
 ./gradlew verifyCategoryUi
+./gradlew verifyDataAndSettingsUi
 ./gradlew verifyApplication
 ```
 
@@ -116,8 +121,8 @@ and persistence responsibilities:
 
 | Area | Main responsibilities |
 | --- | --- |
-| JavaFX presentation | `MoneyMapApp` assembles dependencies and creates the stage. `ApplicationController` owns shell navigation. `TransactionController` and `CategoryController` connect the transaction and custom-category workflows to their FXML views. `SgdFormatter` formats display values. |
-| Application/service | `TransactionService` loads state, supplies type-compatible categories, validates and creates or updates transactions and custom categories, resolves fallback categories, safely removes transactions, reassigns or deletes categories, configures monthly expense budgets, calculates category spending and budget state, and exposes non-mutating transaction-history queries. `DataRepository` is its persistence boundary. |
+| JavaFX presentation | `MoneyMapApp` assembles dependencies and creates the stage. `ApplicationController` owns shell navigation. `TransactionController`, `CategoryController`, and `DataAndSettingsController` connect their respective FXML workflows to the service. `SgdFormatter` formats display values. |
+| Application/service | `TransactionService` loads state, supplies type-compatible categories, validates and creates or updates transactions and custom categories, resolves fallback categories, safely removes transactions, reassigns or deletes categories, configures monthly expense budgets, calculates category spending and budget state, exposes non-mutating transaction-history queries, and delegates complete-state backup export. `DataRepository` is its persistence boundary. |
 | Domain | `Transaction`, `TransactionType`, `MoneyAmount`, `Category`, `Budget`, `StarterCategoryCatalog`, and `ApplicationState` hold immutable data and enforce core invariants. |
 | Persistence | `ApplicationDirectoryResolver` chooses a stable application base. `JsonDataRepository` maps state to versioned JSON and performs load, validation, atomic replacement, and corrupt-file recovery. |
 
@@ -359,6 +364,14 @@ warning. An invalid or unsupported temporary file is moved to a free name
 beginning with `moneymap.json.corrupt`, produces a recovery warning, and leaves
 the application with the seeded safe state.
 
+Backup export uses the same schema mapping as local persistence. The Data and
+Settings controller selects a destination through the native save dialog, then
+asks `TransactionService` to export its current immutable state through
+`DataRepository`. `JsonDataRepository` rejects the active data file and its
+temporary file as destinations, writes only the selected backup path, and
+reports an I/O failure without changing the active in-memory or local state.
+Import remains deliberately out of scope for this slice.
+
 Loading validates the schema version, required lists and fields, UUID and enum
 values, duplicate IDs, amount/date/note invariants, fallback categories, and
 transaction category references. Malformed data, an unsupported version, or an
@@ -370,7 +383,7 @@ investigation or a later recovery feature.
 
 ## Testing strategy and evidence
 
-The 49 JUnit tests use specification-based equivalence partitions and boundary
+The JUnit tests use specification-based equivalence partitions and boundary
 values:
 
 - amount tests cover zero, positive values, scales zero through two, whitespace,
@@ -396,7 +409,9 @@ values:
   a valid temporary first save, preservation of an invalid temporary first
   save, invalid-date recovery from main and temporary files, recurring
   explicit-zero budget round-trip, edited/deleted-transaction round-trip, and preservation
-  of a valid file after a failed temporary write.
+  of a valid file after a failed temporary write, complete and starter-state
+  backup export, archived-category/budget export preservation, and local-state
+  preservation after an export failure.
 
 `TransactionUiSmokeTest` complements those tests at the integration level. It
 checks the visible history controls, newest-first displayed results, exact-date
@@ -417,6 +432,11 @@ monthly-default line when a one-time amount applies, and reload. These checks
 do not replace manual
 inspection: JavaFX resource lookup and focus-owner assertions cannot prove the
 rendered layout is visually correct on every platform.
+`DataAndSettingsUiSmokeTest` verifies export through the real FXML, controller,
+service, and JSON repository. It covers a visibly labelled, accessible export
+control; complete-data backup round-trip; successful export feedback; and
+failure feedback that leaves local data unchanged. It cannot automate every
+platform's native file chooser.
 
 ## Instructions for Manual Testing
 
@@ -591,6 +611,22 @@ Use a disposable directory so the test cannot alter personal data.
 2. Confirm `data/moneymap.json` exists beside `MoneyMap.jar`.
 3. Reopen MoneyMap and return to Transactions.
 4. Confirm the saved amounts, dates, categories, and notes are still displayed.
+
+### Export a complete backup
+
+1. In the disposable installation, create at least one transaction, custom or
+   archived category, and Expense budget.
+2. Open **Data and Settings**, confirm **Export backup…** has visible text and
+   can receive keyboard focus, then select it.
+3. In the native save dialog, choose a new writable `.json` file outside the
+   active `data/` directory and complete the save.
+4. Confirm MoneyMap names the exported file in its success feedback and the
+   live Transactions, Categories and Budgets, and Dashboard data remain
+   unchanged.
+5. Attempt an export to an unwritable location or a directory. Confirm clear
+   failure feedback and verify the existing `data/moneymap.json` is unchanged.
+6. Do not choose the active `data/moneymap.json` file. Import and restoration
+   are not available in this increment.
 
 ### Recovery from invalid local data
 

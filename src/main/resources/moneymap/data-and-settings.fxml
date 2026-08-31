@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.VBox?>
-<VBox id="dataAndSettingsView" spacing="14" styleClass="page" xmlns="http://javafx.com/javafx/17.0.7" xmlns:fx="http://javafx.com/fxml/1">
+<VBox id="dataAndSettingsView" spacing="14" styleClass="page" xmlns="http://javafx.com/javafx/17.0.7" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs3227.moneymap.DataAndSettingsController">
     <padding><Insets top="42" right="48" bottom="42" left="48" /></padding>
     <Label text="Data and Settings" styleClass="page-title" />
-    <Label text="Manage local data and backups here." styleClass="muted" />
+    <Label text="Keep a local copy of your MoneyMap data." styleClass="muted" />
     <VBox spacing="8" styleClass="empty-panel">
-        <Label text="Data tools are not configured yet" styleClass="section-title" />
-        <Label text="Local persistence, export, import, and application settings will be added in a later issue." styleClass="muted" wrapText="true" />
+        <Label text="Export backup" styleClass="section-title" />
+        <Label text="Save categories, archived states, transactions, budgets, and version information to a backup file." styleClass="muted" wrapText="true" />
+        <Button fx:id="exportButton" id="exportButton" text="Export backup…" onAction="#chooseBackupDestination" accessibleText="Export complete MoneyMap backup" styleClass="primary-button" />
+        <Label fx:id="exportFeedback" id="exportFeedback" managed="false" visible="false" wrapText="true" />
     </VBox>
 </VBox>

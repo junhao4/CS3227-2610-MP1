@@ -99,6 +99,25 @@ public final class JsonDataRepository implements DataRepository {
         replaceMainFile();
     }
 
+    @Override
+    public void export(ApplicationState state, Path destination) throws IOException {
+        Objects.requireNonNull(state, "Application state is required");
+        Objects.requireNonNull(destination, "Backup destination is required");
+        Path backupFile = destination.toAbsolutePath().normalize();
+        if (backupFile.equals(dataFile) || backupFile.equals(temporaryFile())) {
+            throw new IOException("Choose a backup file other than MoneyMap's active data file.");
+        }
+        if (Files.isDirectory(backupFile)) {
+            throw new IOException("Choose a file name for the backup.");
+        }
+        Path parent = backupFile.getParent();
+        if (parent == null) {
+            throw new IOException("Choose a backup file inside a directory.");
+        }
+        Files.createDirectories(parent);
+        Files.writeString(backupFile, GSON.toJson(toPersistedState(state)), StandardCharsets.UTF_8);
+    }
+
     Path dataFile() {
         return dataFile;
     }
