@@ -64,6 +64,35 @@ public final class TransactionService {
     }
 
     /**
+     * Validates, persists, and publishes a new user-defined category.
+     *
+     * @param type category transaction type
+     * @param name category display name
+     * @return persisted category
+     */
+    public Category createCategory(TransactionType type, String name) {
+        Objects.requireNonNull(type, "Select Income or Expense.");
+        String normalizedName = name == null ? "" : name.strip();
+        if (normalizedName.isBlank()) {
+            throw new IllegalArgumentException("Category name is required.");
+        }
+        if (normalizedName.codePointCount(0, normalizedName.length()) > 40) {
+            throw new IllegalArgumentException("Category name must contain 1 to 40 characters.");
+        }
+        boolean duplicate = categoriesFor(type).stream()
+                .anyMatch(category -> category.name().equalsIgnoreCase(normalizedName));
+        if (duplicate) {
+            throw new IllegalArgumentException("A category with this name already exists for "
+                    + displayType(type) + ".");
+        }
+        Category category = new Category(UUID.randomUUID(), type, normalizedName, false);
+        ApplicationState candidate = state.withCategory(category);
+        persist(candidate);
+        state = candidate;
+        return category;
+    }
+
+    /**
      * Supplies the current transaction history.
      *
      * @return immutable transaction history with newly created entries first
@@ -148,5 +177,10 @@ public final class TransactionService {
         } catch (IOException exception) {
             throw new PersistenceException("MoneyMap could not save the transaction.", exception);
         }
+    }
+
+    /** Formats a transaction type for validation feedback. */
+    private static String displayType(TransactionType type) {
+        return type == TransactionType.INCOME ? "Income" : "Expense";
     }
 }

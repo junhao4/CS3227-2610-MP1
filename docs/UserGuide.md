@@ -39,8 +39,8 @@ Use the navigation controls on the left to open an area:
   budget status.
 - **Transactions** — records and displays real Income and Expense
   transactions.
-- **Categories and Budgets** — placeholder for category and monthly-budget
-  management.
+- **Categories and Budgets** — creates and displays custom Income and Expense
+  categories. Monthly budgets are not available yet.
 - **Data and Settings** — placeholder for backup and data-management tools.
 
 Click a navigation control, or press Tab until it has focus. On macOS, activate
@@ -132,11 +132,32 @@ The two `Uncategorised` choices are distinct permanent fallback categories. If
 you do not select a category, MoneyMap automatically uses the fallback matching
 the transaction type.
 
+## Create a custom category
+
+Open **Categories and Budgets** to create an ordinary category for either
+Income or Expense:
+
+1. Select the category type.
+2. Enter a name, such as `Investments`, `Loans`, or `Credit Cards`.
+3. Select **Create category**.
+
+Names are trimmed before saving, must contain 1 to 40 characters, and must be
+unique without regard to letter case within the selected type. The same name
+may be used once for Income and once for Expense. Blank, overlong, or
+duplicate names are rejected with visible feedback and are not saved. A new
+category appears in the current-category list and in the compatible category
+choices on the Transactions screen. Category names have no specialised
+account, investment, loan, or credit-card behavior.
+
+The current-category list scrolls vertically when it is taller than the
+window, so every saved category remains reachable without changing the window
+layout.
+
 ## Automatic local persistence
 
-MoneyMap saves every successful transaction automatically and reloads saved
-transactions the next time it starts. For a packaged application, the files
-are located beside the JAR:
+MoneyMap saves every successful transaction and custom-category creation
+automatically and reloads the saved state the next time it starts. For a
+packaged application, the files are located beside the JAR:
 
 ```text
 application-folder/
@@ -188,7 +209,7 @@ The current build supports recording, reviewing, filtering, and searching
 displayed Income and Expense transactions. It does not yet support:
 
 - editing or deleting transactions;
-- user-created, renamed, archived, or deleted categories;
+- renamed, archived, or deleted categories;
 - budgets or Dashboard calculations;
 - import or export;
 - wallets, transfers, accounts, bank synchronisation, or specialised

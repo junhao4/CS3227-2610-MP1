@@ -53,6 +53,9 @@ public class ApplicationController {
             if ("/moneymap/transactions.fxml".equals(resource)) {
                 loader.setControllerFactory(type -> new TransactionController(transactionService));
             }
+            if ("/moneymap/categories-and-budgets.fxml".equals(resource)) {
+                loader.setControllerFactory(type -> new CategoryController(transactionService));
+            }
             Node view = loader.load();
             shell.setCenter(view);
         } catch (IOException | RuntimeException exception) {

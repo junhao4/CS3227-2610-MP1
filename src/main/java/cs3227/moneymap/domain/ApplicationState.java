@@ -43,4 +43,17 @@ public record ApplicationState(List<Category> categories, List<Transaction> tran
         updated.addAll(transactions);
         return new ApplicationState(categories, updated);
     }
+
+    /**
+     * Returns a new state with the supplied category appended to the category list.
+     *
+     * @param category validated category to add
+     * @return updated immutable state
+     */
+    public ApplicationState withCategory(Category category) {
+        List<Category> updated = new ArrayList<>(categories.size() + 1);
+        updated.addAll(categories);
+        updated.add(category);
+        return new ApplicationState(updated, transactions);
+    }
 }

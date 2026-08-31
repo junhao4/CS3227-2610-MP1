@@ -1,13 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.VBox?>
-<VBox id="categoriesAndBudgetsView" spacing="14" styleClass="page" xmlns="http://javafx.com/javafx/17.0.7" xmlns:fx="http://javafx.com/fxml/1">
-    <padding><Insets top="42" right="48" bottom="42" left="48" /></padding>
-    <Label text="Categories and Budgets" styleClass="page-title" />
-    <Label text="Organise transactions and set monthly spending limits here." styleClass="muted" />
-    <VBox spacing="8" styleClass="empty-panel">
-        <Label text="No categories configured" styleClass="section-title" />
-        <Label text="Starter categories, custom categories, and monthly budgets will be managed in this area." styleClass="muted" wrapText="true" />
-    </VBox>
-</VBox>
+<ScrollPane fx:id="categoryScrollPane" id="categoriesAndBudgetsView" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" xmlns="http://javafx.com/javafx/17.0.0" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs3227.moneymap.CategoryController">
+    <content>
+        <VBox spacing="14" styleClass="page">
+            <padding><Insets top="42" right="48" bottom="42" left="48" /></padding>
+            <Label text="Categories and Budgets" styleClass="page-title" />
+            <Label text="Organise transactions and set monthly spending limits here." styleClass="muted" />
+            <VBox spacing="14" styleClass="panel category-panel">
+                <Label text="Create a category" styleClass="section-title" />
+                <Label text="Categories are specific to Income or Expense." styleClass="muted" />
+                <ComboBox fx:id="categoryTypeComboBox" id="categoryTypeComboBox" promptText="Type" accessibleText="Category type" maxWidth="Infinity" />
+                <TextField fx:id="categoryNameField" id="categoryNameField" promptText="e.g. Investments" accessibleText="Category name, maximum 40 characters" />
+                <Button id="createCategoryButton" text="Create category" onAction="#createCategory" defaultButton="true" styleClass="primary-button" accessibleText="Create category" />
+                <Label fx:id="categoryValidationLabel" id="categoryValidationLabel" managed="false" visible="false" wrapText="true" styleClass="validation-error" />
+            </VBox>
+            <VBox spacing="8" styleClass="panel category-panel">
+                <Label text="Current categories" styleClass="section-title" />
+                <VBox fx:id="categoryRows" id="categoryRows" spacing="4" />
+            </VBox>
+        </VBox>
+    </content>
+</ScrollPane>

@@ -3,7 +3,6 @@ package cs3227.moneymap.service;
 import cs3227.moneymap.domain.ApplicationState;
 import cs3227.moneymap.domain.Category;
 import cs3227.moneymap.domain.MoneyAmount;
-import cs3227.moneymap.domain.StarterCategoryCatalog;
 import cs3227.moneymap.domain.Transaction;
 import cs3227.moneymap.domain.TransactionType;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +45,58 @@ class TransactionServiceTest {
                 .allMatch(category -> category.type() == TransactionType.INCOME));
         assertTrue(service.categoriesFor(TransactionType.EXPENSE).stream()
                 .allMatch(category -> category.type() == TransactionType.EXPENSE));
+    }
+
+    @Test
+    void createCategory_trimsAndPersistsTypeSpecificCategory() throws IOException {
+        Category category = service.createCategory(TransactionType.INCOME, "  Investments  ");
+
+        assertEquals("Investments", category.name());
+        assertEquals(TransactionType.INCOME, category.type());
+        assertTrue(service.categoriesFor(TransactionType.INCOME).contains(category));
+        assertEquals(category, repository.savedState.categories().get(repository.savedState.categories().size() - 1));
+    }
+
+    @Test
+    void createCategory_allowsSameNameAcrossTypesButRejectsDuplicateWithinType() {
+        Category income = service.createCategory(TransactionType.INCOME, "Loans");
+        Category expense = service.createCategory(TransactionType.EXPENSE, " loans ");
+
+        assertEquals("Loans", income.name());
+        assertEquals("loans", expense.name());
+        assertThrows(IllegalArgumentException.class,
+                () -> service.createCategory(TransactionType.INCOME, " LOANS "));
+    }
+
+    @Test
+    void createCategory_rejectsBlankAndOverlongNamesWithoutSaving() {
+        assertThrows(IllegalArgumentException.class, () -> service.createCategory(TransactionType.EXPENSE, "   "));
+        assertThrows(IllegalArgumentException.class,
+                () -> service.createCategory(TransactionType.EXPENSE, "a".repeat(41)));
+        assertEquals(0, repository.saveCount);
+        assertEquals(14, service.categoriesFor(TransactionType.EXPENSE).size()
+                + service.categoriesFor(TransactionType.INCOME).size());
+    }
+
+    @Test
+    void createCategory_repositoryFailure_doesNotPublishCategory() {
+        repository.failSave = true;
+
+        assertThrows(PersistenceException.class, () -> service.createCategory(TransactionType.EXPENSE, "Loans"));
+        assertTrue(service.categoriesFor(TransactionType.EXPENSE).stream()
+                .noneMatch(category -> category.name().equals("Loans")));
+    }
+
+    @Test
+    void createCategory_canBeUsedByCompatibleTransaction() throws IOException {
+        Category category = service.createCategory(TransactionType.EXPENSE, "Credit Cards");
+
+        Transaction transaction = service.createTransaction(
+                TransactionType.EXPENSE, "25.00", TODAY, category.id(), "Card payment");
+
+        assertEquals(category, transaction.category());
+        assertThrows(IllegalArgumentException.class, () -> service.createTransaction(
+                TransactionType.INCOME, "25.00", TODAY, category.id(), "Wrong type"));
     }
 
     @Test

@@ -14,7 +14,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,6 +58,18 @@ class JsonDataRepositoryTest {
         assertTrue(json.contains("\"version\": 1"));
         assertTrue(json.contains("\"amount\": \"8.50\""));
         assertFalse(Files.exists(repository.temporaryFile()));
+    }
+
+    @Test
+    void saveThenLoad_preservesCustomCategories() throws IOException {
+        JsonDataRepository repository = new JsonDataRepository(applicationDirectory);
+        ApplicationState initial = ApplicationState.withStarterCategories();
+        Category custom = new Category(UUID.randomUUID(), TransactionType.EXPENSE, "Credit Cards", false);
+
+        repository.save(initial.withCategory(custom));
+
+        assertEquals(custom, repository.load().state().categories().stream()
+                .filter(category -> category.id().equals(custom.id())).findFirst().orElseThrow());
     }
 
     @Test

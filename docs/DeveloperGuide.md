@@ -10,7 +10,12 @@ project checks from the repository root:
 ./gradlew clean check build verifyPrototypes javadoc
 ```
 
-`check` runs the JUnit suite and both production smoke executables:
+`check` runs the Checkstyle gates, JUnit suite, and all three production smoke
+executables:
+
+- `checkstyleMain`, `checkstyleTest`, `checkstyleSmoke`, and
+  `checkstylePrototype` enforce the configured mechanical Java conventions
+  across every Java source set.
 
 - `verifyApplication` starts the production assembly, checks the stage, title,
   scene, and stylesheet, and opens all four navigation destinations.
@@ -20,11 +25,15 @@ project checks from the repository root:
   validation feedback, fallback assignment, newest-first history, combined
   history filtering, note search, empty results, filter reset, JSON save,
   reload, and visible rows.
+- `verifyCategoryUi` loads the real Categories and Budgets FXML with a temporary
+  data directory and verifies custom category creation, normalization,
+  duplicate validation, type scoping, visible feedback, the configured vertical
+  scroll container, and reload.
 
 `verifyPrototypes` separately verifies that all eight exploratory prototype
 FXML resources still load. It does not test production behavior.
 
-The current JUnit suite contains 50 tests covering the domain, validation,
+The current JUnit suite contains 56 tests covering the domain, validation,
 service, path-resolution, and JSON-persistence rules. Useful focused commands
 are:
 
@@ -33,8 +42,17 @@ are:
 ./gradlew test --tests 'cs3227.moneymap.service.*'
 ./gradlew test --tests 'cs3227.moneymap.persistence.*'
 ./gradlew verifyTransactionUi
+./gradlew verifyCategoryUi
 ./gradlew verifyApplication
 ```
+
+The Checkstyle configuration is in `config/checkstyle/checkstyle.xml` and uses
+the Gradle Checkstyle tool at version 10.26.1. It enforces UTF-8 source files,
+no tabs, a 120-character hard line limit, explicit imports, naming conventions,
+braces, whitespace, and unused-import checks. The `javadoc` task and review
+checklist remain responsible for the project’s header-comment requirements and
+for higher-level CS2103/T guidance such as KISS, SLAP, cohesion, and
+readability, which cannot be assessed reliably by this ruleset alone.
 
 An FXML or JavaFX smoke test does not prove visual correctness, complete
 keyboard behavior, or platform accessibility. Those properties remain part of
@@ -90,8 +108,8 @@ and persistence responsibilities:
 
 | Area | Main responsibilities |
 | --- | --- |
-| JavaFX presentation | `MoneyMapApp` assembles dependencies and creates the stage. `ApplicationController` owns shell navigation. `TransactionController`, `transactions.fxml`, and `moneymap.css` implement the list-first transaction workflow. `SgdFormatter` formats display values. |
-| Application/service | `TransactionService` loads state, supplies type-compatible categories, resolves fallback categories, creates transactions, and exposes non-mutating transaction-history queries. `DataRepository` is its persistence boundary. |
+| JavaFX presentation | `MoneyMapApp` assembles dependencies and creates the stage. `ApplicationController` owns shell navigation. `TransactionController` and `CategoryController` connect the transaction and custom-category workflows to their FXML views. `SgdFormatter` formats display values. |
+| Application/service | `TransactionService` loads state, supplies type-compatible categories, validates and creates custom categories, resolves fallback categories, creates transactions, and exposes non-mutating transaction-history queries. `DataRepository` is its persistence boundary. |
 | Domain | `Transaction`, `TransactionType`, `MoneyAmount`, `Category`, `StarterCategoryCatalog`, and `ApplicationState` hold immutable data and enforce core invariants. |
 | Persistence | `ApplicationDirectoryResolver` chooses a stable application base. `JsonDataRepository` maps state to versioned JSON and performs load, validation, atomic replacement, and corrupt-file recovery. |
 
@@ -148,6 +166,16 @@ offers all current categories as history filters. It displays a separate
 no-results message when records exist but none match the active criteria. This
 is a presentation distinction only; it does not alter the stored state.
 
+### Custom category creation flow
+
+`CategoryController` submits the selected type and raw name to
+`TransactionService.createCategory`. The service strips surrounding whitespace,
+validates the 40-code-point limit, rejects case-insensitive duplicates within
+the selected type, constructs a non-fallback `Category`, and saves a candidate
+`ApplicationState` before publishing it. Because the state is shared by
+subsequently loaded views, a newly created category is available to the
+compatible transaction selector without a second category-management store.
+
 ## Domain and validation decisions
 
 Money amounts are stored as `BigDecimal` through `MoneyAmount` and normalized
@@ -168,14 +196,15 @@ permanent fallbacks. Category selectors are type-specific, while the service
 also enforces compatibility so invalid controller or persisted input cannot
 bypass the rule.
 
-Editing, deletion, custom category management, budgets, and Dashboard
-calculations are intentionally outside this increment. Transaction-history
-filtering and note search are implemented.
+Renaming, archiving, permanent deletion, budgets, and Dashboard calculations
+are intentionally outside this increment. Custom category creation and
+transaction-history filtering and note search are implemented.
 
 ## JSON persistence and recovery
 
 `JsonDataRepository` currently writes schema version `1`. The saved document
-contains all Issue #3 state: categories and transactions, including stable IDs,
+contains the current application state: starter and custom categories and
+transactions, including stable IDs,
 types, exact amount strings, ISO dates, category references, fallback flags,
 and notes. Future budget or category-lifecycle fields are not implemented in
 this schema increment.
@@ -212,7 +241,7 @@ investigation or a later recovery feature.
 
 ## Testing strategy and evidence
 
-The 50 JUnit tests use specification-based equivalence partitions and boundary
+The 56 JUnit tests use specification-based equivalence partitions and boundary
 values:
 
 - amount tests cover zero, positive values, scales zero through two, whitespace,
@@ -223,8 +252,9 @@ values:
 - catalog tests cover the exact starter sets and two distinct permanent
   fallbacks;
 - service tests cover injected today, type-specific categories, Income
-  creation, automatic fallback, mismatch rejection, save invocation,
-  save-before-publish failure behavior, newest-first history ordering, each
+  creation, automatic fallback, mismatch rejection, custom category creation
+  and validation, compatible transaction use, save invocation, save-before-publish failure behavior,
+  newest-first history ordering, each
   history filter, case-insensitive note search, combined queries, blank-query
   handling, empty results, and non-mutation;
 - path tests cover configured development and packaged-JAR bases; and
@@ -237,7 +267,9 @@ values:
 `TransactionUiSmokeTest` complements those tests at the integration level. It
 checks the visible history controls, newest-first displayed results, combined
 filters, case-insensitive note search, the no-results state, and Clear filters
-in addition to the transaction-creation workflow. It does not replace manual
+in addition to the transaction-creation workflow. `CategoryUiSmokeTest` checks
+custom-category creation, validation, type scoping, and reload. These checks do
+not replace manual
 inspection: JavaFX resource lookup and focus-owner assertions cannot prove the
 rendered layout is visually correct on every platform.
 
@@ -298,6 +330,23 @@ Use a disposable directory so the test cannot alter personal data.
    matching transactions** and does not show the no-transactions message.
 7. Select **Clear filters**. Confirm all saved rows return, then restart the
    application and confirm the same records remain saved.
+
+### Create and use custom categories
+
+1. Open **Categories and Budgets** and confirm the type selector, name field,
+   **Create category** button, and current-category list are visible.
+2. Create `Investments` as an Income category and `Loans` as an Expense
+   category. Confirm each appears with its type in the list.
+3. Try a blank name, a name longer than 40 characters, and a case-insensitive
+   duplicate within one type. Confirm each attempt shows validation feedback
+   and does not add a second category.
+4. Create the same display name once under Income and once under Expense.
+   Open Transactions and confirm each type exposes only its compatible custom
+   category.
+5. Create enough categories for the list to exceed the window height. Scroll
+   the Categories and Budgets page vertically and confirm every category is
+   reachable.
+6. Close and reopen MoneyMap. Confirm the custom categories remain available.
 
 ### Restart persistence
 
