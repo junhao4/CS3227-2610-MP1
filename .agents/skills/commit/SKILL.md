@@ -13,6 +13,24 @@ Create focused, reviewable commits from existing changes.
 - Ask before editing `.gitignore` or committing.
 - This skill handles local commit creation only; history rewriting, pushing, tagging, and issue-closing are outside its scope.
 
+## GitHub issue context
+
+When the commit request names a GitHub issue or depends on issue status, use
+the configured GitHub CLI for read-only context before grouping changes:
+
+```bash
+gh auth status
+gh issue view <number> --json number,title,state,labels,body,comments
+```
+
+Use `gh api graphql` when native dependency relationships must be checked.
+Do not assume that GitHub CLI authentication and Git push authentication are
+the same: issue and label operations use the GitHub API credential, while a
+push may use the repository remote's separate HTTPS or SSH credential. Report
+each failure against the correct operation. Do not modify GitHub, push, or
+close an issue from this skill; use the separate close-issue workflow when
+requested and approved.
+
 ## Gitignore
 
 Inspect `.gitignore` before grouping changes.
@@ -30,6 +48,52 @@ Never use `.gitignore` to hide an uncertain or user-owned file.
 ## Commits
 
 Group changes by intent, not merely by file. Each commit should represent one independently valid logical outcome. Keep inseparable implementation, tests, and documentation together.
+
+### Commit grouping standard
+
+There is no fixed one-issue-to-one-commit rule. Use the following decision
+standard for issue work:
+
+1. Start by identifying the independently meaningful outcomes in the issue.
+   A small issue may fit naturally in one feature commit, while a larger issue
+   may need several commits. Keep implementation, its tests, and the
+   documentation that describes the delivered behaviour together when they
+   form one independently valid outcome.
+2. Create a separate commit for unrelated tooling, process, or repository
+   maintenance work, even if it was done during the same session. Examples
+   include static-analysis configuration, agent-skill changes, CI changes, and
+   `.gitignore` updates.
+3. Use multiple commits for one issue when each commit has a clear,
+   reviewable purpose and is independently valid or is a necessary,
+   understandable step in the sequence. Examples include a preparatory
+   refactor followed by the feature, separate domain and UI layers, or a
+   separately releasable follow-up. Do not split merely because the
+   implementation took multiple iterations.
+4. Keep review fixes in the original feature commit when the feature has not
+   yet been committed. If the feature was already committed and a later review
+   reopens it, use a focused follow-up `fix` or `refactor` commit and explain
+   the relationship in its body.
+5. An issue, log, or development session may cover one commit or several
+   commits. There is no need to force all related work into one commit or to
+   create multiple commits artificially. Every commit must have one clear
+   intent, and the commit sequence should be easy to review and explain.
+   Commit boundaries follow repository outcomes, not prompts, tool invocations,
+   or the number of files changed.
+6. Include each development log with the commit for the outcome it records.
+   A feature implementation log belongs with the feature commit; a separate
+   tooling or process log belongs with that maintenance commit. If one log
+   genuinely covers several commits, place it with the primary outcome and
+   explain the related commits in their bodies when useful. Do not duplicate
+   logs across commits.
+
+Before staging, classify every changed path as either part of the primary
+issue outcome or a separate maintenance outcome. If both kinds are present,
+prepare separate commits with explicit paths. When an issue has multiple
+outcomes, divide it into the smallest sensible sequence of commits and state
+the relationship in the commit bodies where useful. When uncertain, prefer
+the smallest set of commits that each builds, tests, and communicates one
+coherent change without separating inseparable feature code from its tests or
+user and developer documentation.
 
 Stage explicit paths only:
 
