@@ -113,3 +113,13 @@ If no follow-up is needed, state that explicitly and record the final checks
 and human-review status. Keep findings and handoff synchronized when a review
 is rerun: resolve or retain each finding with evidence rather than appending
 contradictory conclusions.
+
+## User handoff
+
+After every completed review, tell the user exactly which manual checks remain
+for them to run. Keep this short, concrete, and tied to behaviours not proven
+by automated evidence, such as visual layout, native dialogs, keyboard flow,
+or target-platform behaviour. State `No manual checks required` only when the
+review evidence genuinely covers all applicable manual acceptance concerns.
+Do not present recommended manual checks as unresolved defects unless the
+review found evidence of a defect.

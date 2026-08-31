@@ -5,19 +5,22 @@ description: Implement a scoped MoneyMap issue through code, documentation, and 
 
 # Implement
 
-Before choosing an issue, use the repository's configured GitHub CLI when the
-request refers to a GitHub issue or asks for the next unblocked issue:
+Before implementing a GitHub issue, use the repository's configured GitHub CLI.
+Run each check independently so an auth or network failure in one command does
+not hide the result of the others:
 
 ```bash
 gh auth status
 gh issue view <number> --json number,title,state,labels,body,comments
 ```
 
-Use `gh api graphql` when native GitHub dependency relationships are needed.
-Treat the issue body and native dependency data as the source for scope and
-blocking status. If the CLI is unavailable or unauthenticated, report that
-constraint and use only clearly available local evidence; do not invent issue
-dependencies.
+Also run `gh api user` to verify the API identity. Use `gh api graphql` when
+native GitHub dependency relationships are needed. Treat the issue body and
+native dependency data as the source for scope and blocking status. These are
+separate GitHub API checks from Git push credentials: a failure in one does not
+prove that the others are invalid. Report the exact failed operation. If the
+CLI is unavailable or unauthenticated, report that constraint and use only
+clearly available local evidence; do not invent issue dependencies.
 
 For the requested issue, run these skills in order:
 

@@ -69,6 +69,10 @@ Keep IDs across reruns. Valid statuses are `Open`, `Accepted`, `In progress`,
 -
 ## Gaps and limitations
 -
+
+## Manual checks for user
+-
+
 ## Conclusion
 -
 ```

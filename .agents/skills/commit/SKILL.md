@@ -13,24 +13,6 @@ Create focused, reviewable commits from existing changes.
 - Ask before editing `.gitignore` or committing.
 - This skill handles local commit creation only; history rewriting, pushing, tagging, and issue-closing are outside its scope.
 
-## GitHub issue context
-
-When the commit request names a GitHub issue or depends on issue status, use
-the configured GitHub CLI for read-only context before grouping changes:
-
-```bash
-gh auth status
-gh issue view <number> --json number,title,state,labels,body,comments
-```
-
-Use `gh api graphql` when native dependency relationships must be checked.
-Do not assume that GitHub CLI authentication and Git push authentication are
-the same: issue and label operations use the GitHub API credential, while a
-push may use the repository remote's separate HTTPS or SSH credential. Report
-each failure against the correct operation. Do not modify GitHub, push, or
-close an issue from this skill; use the separate close-issue workflow when
-requested and approved.
-
 ## Gitignore
 
 Inspect `.gitignore` before grouping changes.
