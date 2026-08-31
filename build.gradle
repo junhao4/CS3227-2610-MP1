@@ -121,6 +121,13 @@ tasks.register('verifyDataAndSettingsUi', JavaExec) {
     mainClass = 'cs3227.moneymap.DataAndSettingsUiSmokeTest'
 }
 
+tasks.register('verifyRecoveryUi', JavaExec) {
+    group = 'verification'
+    description = 'Verifies malformed-local-data recovery and subsequent backup import.'
+    classpath = sourceSets.smoke.runtimeClasspath
+    mainClass = 'cs3227.moneymap.RecoveryUiSmokeTest'
+}
+
 tasks.named('check') {
     dependsOn tasks.named('checkstyleMain')
     dependsOn tasks.named('checkstyleTest')
@@ -131,6 +138,7 @@ tasks.named('check') {
     dependsOn tasks.named('verifyTransactionUi')
     dependsOn tasks.named('verifyCategoryUi')
     dependsOn tasks.named('verifyDataAndSettingsUi')
+    dependsOn tasks.named('verifyRecoveryUi')
 }
 
 tasks.named('shadowJar') {

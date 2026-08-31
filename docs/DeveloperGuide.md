@@ -56,6 +56,7 @@ are:
 ./gradlew verifyTransactionUi
 ./gradlew verifyCategoryUi
 ./gradlew verifyDataAndSettingsUi
+./gradlew verifyRecoveryUi
 ./gradlew verifyApplication
 ```
 
