@@ -53,6 +53,12 @@ unverified behaviour available.
 Steps 1–3 are mandatory for a normal feature review. Narrow later steps only
 when irrelevant; report what was skipped and why.
 
+When Java source changed: read the routed Java coding-standard reference; run
+and record a 120-character scan on changed Java files; and inspect changed
+public APIs, non-trivial private methods, and class responsibilities for
+concise Javadocs. Every violation must be a finding; otherwise code quality
+cannot pass.
+
 ## Finding rules
 
 Report only evidence-based findings. Distinguish defects, risks, suggestions,
@@ -80,7 +86,7 @@ silently delete old findings.
 
 Report all four explicitly:
 
-- `Rerun code-writing skill: YES` for implementation defects, unmet criteria,
+- `Rerun write-code skill: YES` for implementation defects, unmet criteria,
   broken behaviour, data-loss/security risk, serious regression, or code-level
   defensive/design fixes; otherwise `NO`.
 - `Rerun update-documentation skill: YES` for stale/missing docs, diagrams,
