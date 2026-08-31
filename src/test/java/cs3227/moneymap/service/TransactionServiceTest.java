@@ -2,6 +2,7 @@ package cs3227.moneymap.service;
 
 import cs3227.moneymap.domain.ApplicationState;
 import cs3227.moneymap.domain.Category;
+import cs3227.moneymap.domain.MoneyAmount;
 import cs3227.moneymap.domain.StarterCategoryCatalog;
 import cs3227.moneymap.domain.Transaction;
 import cs3227.moneymap.domain.TransactionType;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
@@ -87,11 +89,97 @@ class TransactionServiceTest {
         assertTrue(service.transactions().isEmpty());
     }
 
+    @Test
+    void findTransactions_sortsNewestDateFirstWithoutChangingStoredHistory() throws IOException {
+        List<Transaction> stored = transactionsForHistoryTests();
+        TransactionService historyService = serviceFor(stored);
+
+        List<Transaction> result = historyService.findTransactions(null, null, null, "");
+
+        assertEquals(List.of(stored.get(2), stored.get(3), stored.get(1), stored.get(0)), result);
+        assertEquals(result, historyService.findTransactions(null, null, null, "  "));
+        assertTrue(historyService.findTransactions(null, null,
+                UUID.fromString("00000000-0000-0000-0000-000000000099"), null).isEmpty());
+        assertEquals(stored, historyService.transactions());
+    }
+
+    @Test
+    void findTransactions_filtersByMonthTypeCategoryAndCaseInsensitiveNoteText() throws IOException {
+        List<Transaction> stored = transactionsForHistoryTests();
+        TransactionService historyService = serviceFor(stored);
+        Category food = categoryNamed(historyService, "Food", TransactionType.EXPENSE);
+
+        assertEquals(List.of(stored.get(2), stored.get(3), stored.get(1)),
+                historyService.findTransactions(YearMonth.of(2026, 9), null, null, null));
+        assertEquals(List.of(stored.get(1)),
+                historyService.findTransactions(null, TransactionType.INCOME, null, null));
+        assertEquals(List.of(stored.get(3), stored.get(0)),
+                historyService.findTransactions(null, null, food.id(), null));
+        assertEquals(List.of(stored.get(3), stored.get(0)),
+                historyService.findTransactions(null, null, null, "LUNCH"));
+    }
+
+    @Test
+    void findTransactions_combinesFiltersAndReturnsEmptyResultWithoutMutation() throws IOException {
+        List<Transaction> stored = transactionsForHistoryTests();
+        TransactionService historyService = serviceFor(stored);
+        Category food = categoryNamed(historyService, "Food", TransactionType.EXPENSE);
+
+        assertEquals(List.of(stored.get(3)), historyService.findTransactions(
+                YearMonth.of(2026, 9), TransactionType.EXPENSE, food.id(), "group"));
+        assertTrue(historyService.findTransactions(YearMonth.of(2025, 1), null, null, null).isEmpty());
+        assertEquals(stored, historyService.transactions());
+    }
+
+    @Test
+    void findTransactions_distinguishesFallbackCategoriesWithTheSameName() throws IOException {
+        Category incomeFallback = categoryNamed("Uncategorised", TransactionType.INCOME);
+        Category expenseFallback = categoryNamed("Uncategorised", TransactionType.EXPENSE);
+        Transaction income = transaction("00000000-0000-0000-0000-000000000010", TransactionType.INCOME,
+                "1.00", TODAY, incomeFallback, "Income fallback");
+        Transaction expense = transaction("00000000-0000-0000-0000-000000000011", TransactionType.EXPENSE,
+                "2.00", TODAY, expenseFallback, "Expense fallback");
+        TransactionService historyService = serviceFor(List.of(income, expense));
+
+        assertEquals(List.of(income), historyService.findTransactions(null, null, incomeFallback.id(), null));
+        assertEquals(List.of(expense), historyService.findTransactions(null, null, expenseFallback.id(), null));
+    }
+
     private Category categoryNamed(String name, TransactionType type) {
+        return categoryNamed(service, name, type);
+    }
+
+    private static Category categoryNamed(TransactionService service, String name, TransactionType type) {
         return service.categoriesFor(type).stream()
                 .filter(category -> category.name().equals(name))
                 .findFirst()
                 .orElseThrow();
+    }
+
+    private TransactionService serviceFor(List<Transaction> transactions) throws IOException {
+        ApplicationState initial = ApplicationState.withStarterCategories();
+        return new TransactionService(new FakeRepository(new ApplicationState(initial.categories(), transactions)),
+                Clock.fixed(Instant.parse("2026-08-30T04:00:00Z"), ZoneId.of("Asia/Singapore")), UUID::randomUUID);
+    }
+
+    private List<Transaction> transactionsForHistoryTests() {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        Category transport = categoryNamed("Transport", TransactionType.EXPENSE);
+        Category salary = categoryNamed("Salary", TransactionType.INCOME);
+        return List.of(
+                transaction("00000000-0000-0000-0000-000000000001", TransactionType.EXPENSE, "8.50",
+                        LocalDate.of(2026, 8, 31), food, "Lunch near campus"),
+                transaction("00000000-0000-0000-0000-000000000002", TransactionType.INCOME, "600.00",
+                        LocalDate.of(2026, 9, 1), salary, "Part-time pay"),
+                transaction("00000000-0000-0000-0000-000000000003", TransactionType.EXPENSE, "1.20",
+                        LocalDate.of(2026, 9, 10), transport, "Late bus"),
+                transaction("00000000-0000-0000-0000-000000000004", TransactionType.EXPENSE, "12.00",
+                        LocalDate.of(2026, 9, 10), food, "Lunch group"));
+    }
+
+    private static Transaction transaction(String id, TransactionType type, String amount,
+                                           LocalDate date, Category category, String note) {
+        return new Transaction(UUID.fromString(id), type, MoneyAmount.parse(amount), date, category, note);
     }
 
     private static final class FakeRepository implements DataRepository {

@@ -18,9 +18,13 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
-/** Connects the transaction-entry view to validated creation and persistence. */
+/** Connects the Transactions view to creation, persistence, and history review. */
 public final class TransactionController {
     private final TransactionService service;
 
@@ -37,6 +41,14 @@ public final class TransactionController {
     @FXML
     private ComboBox<Category> transactionCategoryComboBox;
     @FXML
+    private ComboBox<YearMonth> transactionMonthFilter;
+    @FXML
+    private ComboBox<TransactionType> transactionTypeFilter;
+    @FXML
+    private ComboBox<Category> transactionCategoryFilter;
+    @FXML
+    private TextField transactionNoteSearchField;
+    @FXML
     private TextArea transactionNoteArea;
     @FXML
     private Label noteCharacterCountLabel;
@@ -46,6 +58,10 @@ public final class TransactionController {
     private VBox transactionRows;
     @FXML
     private VBox transactionEmptyState;
+    @FXML
+    private Label transactionEmptyTitle;
+    @FXML
+    private Label transactionEmptyMessage;
     @FXML
     private VBox transactionForm;
 
@@ -62,6 +78,7 @@ public final class TransactionController {
         transactionTypeComboBox.setValue(TransactionType.EXPENSE);
         transactionDatePicker.setValue(service.defaultDate());
         transactionNoteArea.textProperty().addListener((observable, previous, note) -> updateNoteCount(note));
+        configureHistoryFilters();
         updateNoteCount("");
         renderTransactions();
     }
@@ -75,6 +92,7 @@ public final class TransactionController {
                     transactionDatePicker.getValue(), selectedCategory == null ? null : selectedCategory.id(),
                     transactionNoteArea.getText());
             clearCompletedFormFields();
+            refreshMonthFilter();
             renderTransactions();
             hideTransactionForm();
         } catch (RuntimeException exception) {
@@ -106,6 +124,51 @@ public final class TransactionController {
         transactionCategoryComboBox.setItems(FXCollections.observableArrayList(service.categoriesFor(selectedType)));
     }
 
+    /** Configures history inputs to rerender the list when their query changes. */
+    private void configureHistoryFilters() {
+        List<Category> categories = allCategories();
+        transactionMonthFilter.setConverter(new YearMonthConverter());
+        transactionTypeFilter.setItems(FXCollections.observableArrayList(TransactionType.values()));
+        transactionTypeFilter.setConverter(new TransactionTypeConverter());
+        transactionCategoryFilter.setItems(FXCollections.observableArrayList(categories));
+        transactionCategoryFilter.setConverter(new CategoryConverter(categories));
+        refreshMonthFilter();
+
+        transactionMonthFilter.valueProperty().addListener((observable, previous, selected) -> renderTransactions());
+        transactionTypeFilter.valueProperty().addListener((observable, previous, selected) -> renderTransactions());
+        transactionCategoryFilter.valueProperty().addListener((observable, previous, selected) -> renderTransactions());
+        transactionNoteSearchField.textProperty().addListener((observable, previous, text) -> renderTransactions());
+    }
+
+    /** Returns all categories in a predictable order for the history filter. */
+    private List<Category> allCategories() {
+        return List.of(TransactionType.values()).stream()
+                .flatMap(type -> service.categoriesFor(type).stream())
+                .sorted(Comparator.comparing(Category::name))
+                .toList();
+    }
+
+    /** Refreshes the available transaction months while preserving a valid selection. */
+    private void refreshMonthFilter() {
+        YearMonth selectedMonth = transactionMonthFilter.getValue();
+        List<YearMonth> months = service.transactions().stream()
+                .map(transaction -> YearMonth.from(transaction.date()))
+                .distinct()
+                .sorted(Comparator.reverseOrder())
+                .toList();
+        transactionMonthFilter.getItems().setAll(months);
+        transactionMonthFilter.setValue(months.contains(selectedMonth) ? selectedMonth : null);
+    }
+
+    /** Restores the unfiltered transaction-history display. */
+    @FXML
+    private void clearTransactionFilters() {
+        transactionMonthFilter.setValue(null);
+        transactionTypeFilter.setValue(null);
+        transactionCategoryFilter.setValue(null);
+        transactionNoteSearchField.clear();
+    }
+
     private void updateNoteCount(String note) {
         int count = note == null ? 0 : note.codePointCount(0, note.length());
         noteCharacterCountLabel.setText(count + " / 200");
@@ -125,14 +188,24 @@ public final class TransactionController {
         addTransactionButton.requestFocus();
     }
 
+    /** Renders transactions that match the current history-filter controls. */
     private void renderTransactions() {
         transactionRows.getChildren().clear();
-        for (Transaction transaction : service.transactions()) {
+        Category selectedCategory = transactionCategoryFilter.getValue();
+        List<Transaction> results = service.findTransactions(
+                transactionMonthFilter.getValue(), transactionTypeFilter.getValue(),
+                selectedCategory == null ? null : selectedCategory.id(), transactionNoteSearchField.getText());
+        for (Transaction transaction : results) {
             transactionRows.getChildren().add(createTransactionRow(transaction));
         }
-        boolean empty = service.transactions().isEmpty();
+        boolean empty = results.isEmpty();
         transactionEmptyState.setManaged(empty);
         transactionEmptyState.setVisible(empty);
+        boolean hasTransactions = !service.transactions().isEmpty();
+        transactionEmptyTitle.setText(hasTransactions ? "No matching transactions" : "No transactions recorded");
+        transactionEmptyMessage.setText(hasTransactions
+                ? "Try clearing a filter or searching for a different note."
+                : "Use Add transaction to record your first income or expense.");
     }
 
     /** Builds one list row using the transaction's persisted display values. */
@@ -186,6 +259,54 @@ public final class TransactionController {
         @Override
         public TransactionType fromString(String value) {
             throw new UnsupportedOperationException("Transaction type is selected from the list.");
+        }
+    }
+
+    /** Formats history categories and distinguishes otherwise identical names. */
+    private static final class CategoryConverter extends StringConverter<Category> {
+        private final List<Category> categories;
+
+        private CategoryConverter(List<Category> categories) {
+            this.categories = List.copyOf(categories);
+        }
+
+        @Override
+        public String toString(Category category) {
+            if (category == null) {
+                return "";
+            }
+            return hasDuplicateName(category)
+                    ? category.name() + " (" + displayType(category.type()) + ")"
+                    : category.name();
+        }
+
+        @Override
+        public Category fromString(String value) {
+            throw new UnsupportedOperationException("Categories are selected from the list.");
+        }
+
+        /** Returns whether a distinct category shares the display name. */
+        private boolean hasDuplicateName(Category category) {
+            return categories.stream().anyMatch(candidate -> !candidate.id().equals(category.id())
+                    && candidate.name().equals(category.name()));
+        }
+
+        private static String displayType(TransactionType type) {
+            return type == TransactionType.INCOME ? "Income" : "Expense";
+        }
+    }
+
+    private static final class YearMonthConverter extends StringConverter<YearMonth> {
+        private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("MMMM uuuu");
+
+        @Override
+        public String toString(YearMonth month) {
+            return month == null ? "" : FORMATTER.format(month);
+        }
+
+        @Override
+        public YearMonth fromString(String value) {
+            throw new UnsupportedOperationException("Months are selected from the list.");
         }
     }
 }

@@ -10,7 +10,10 @@ import cs3227.moneymap.domain.TransactionType;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -67,6 +70,28 @@ public final class TransactionService {
      */
     public List<Transaction> transactions() {
         return state.transactions();
+    }
+
+    /**
+     * Finds transactions matching all supplied history criteria, newest date first.
+     *
+     * @param month optional transaction month
+     * @param type optional transaction type
+     * @param categoryId optional category identity
+     * @param noteQuery optional case-insensitive note text
+     * @return immutable matching transactions, ordered by date descending
+     */
+    public List<Transaction> findTransactions(YearMonth month, TransactionType type,
+                                              UUID categoryId, String noteQuery) {
+        String normalizedQuery = noteQuery == null ? "" : noteQuery.strip().toLowerCase(Locale.ROOT);
+        return state.transactions().stream()
+                .filter(transaction -> month == null || YearMonth.from(transaction.date()).equals(month))
+                .filter(transaction -> type == null || transaction.type() == type)
+                .filter(transaction -> categoryId == null || transaction.category().id().equals(categoryId))
+                .filter(transaction -> normalizedQuery.isEmpty()
+                        || transaction.note().toLowerCase(Locale.ROOT).contains(normalizedQuery))
+                .sorted(Comparator.comparing(Transaction::date).reversed())
+                .toList();
     }
 
     /**

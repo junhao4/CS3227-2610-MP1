@@ -23,6 +23,28 @@
                 <Label HBox.hgrow="ALWAYS" />
                 <Button fx:id="addTransactionButton" id="addTransactionButton" text="＋ Add transaction" onAction="#focusTransactionForm" styleClass="primary-button" accessibleText="Go to the add transaction form" />
             </HBox>
+            <VBox spacing="12" styleClass="panel transaction-filter-panel">
+                <Label text="Find transactions" styleClass="section-title" />
+                <GridPane hgap="18" vgap="8">
+                    <columnConstraints>
+                        <ColumnConstraints hgrow="ALWAYS" percentWidth="25" />
+                        <ColumnConstraints hgrow="ALWAYS" percentWidth="25" />
+                        <ColumnConstraints hgrow="ALWAYS" percentWidth="25" />
+                        <ColumnConstraints hgrow="ALWAYS" percentWidth="25" />
+                    </columnConstraints>
+                    <Label fx:id="transactionMonthFilterLabel" text="Month" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                    <Label fx:id="transactionTypeFilterLabel" text="Type" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                    <Label fx:id="transactionCategoryFilterLabel" text="Category" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                    <Label fx:id="transactionNoteSearchLabel" text="Search notes" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+                    <ComboBox fx:id="transactionMonthFilter" id="transactionMonthFilter" maxWidth="Infinity" promptText="All months" accessibleText="Filter transactions by month" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                    <ComboBox fx:id="transactionTypeFilter" id="transactionTypeFilter" maxWidth="Infinity" promptText="All types" accessibleText="Filter transactions by type" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                    <ComboBox fx:id="transactionCategoryFilter" id="transactionCategoryFilter" maxWidth="Infinity" promptText="All categories" accessibleText="Filter transactions by category" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                    <TextField fx:id="transactionNoteSearchField" id="transactionNoteSearchField" promptText="Search note text" accessibleText="Search transaction notes" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                </GridPane>
+                <HBox alignment="CENTER_RIGHT">
+                    <Button fx:id="clearTransactionFiltersButton" id="clearTransactionFiltersButton" text="Clear filters" onAction="#clearTransactionFilters" styleClass="secondary-button" accessibleText="Clear all transaction filters" />
+                </HBox>
+            </VBox>
             <VBox fx:id="transactionListSection" id="transactionListSection" spacing="0" styleClass="panel transaction-table">
                 <HBox styleClass="table-header">
                     <Label maxWidth="Infinity" text="DATE / NOTE" HBox.hgrow="ALWAYS" />
@@ -31,8 +53,8 @@
                 </HBox>
                 <VBox fx:id="transactionRows" id="transactionRows" spacing="0" />
                 <VBox fx:id="transactionEmptyState" alignment="CENTER" spacing="6" styleClass="transaction-empty-state">
-                    <Label text="No transactions recorded" styleClass="section-title" />
-                    <Label text="Use Add transaction to record your first income or expense." styleClass="muted" />
+                    <Label fx:id="transactionEmptyTitle" text="No transactions recorded" styleClass="section-title" />
+                    <Label fx:id="transactionEmptyMessage" text="Use Add transaction to record your first income or expense." styleClass="muted" />
                 </VBox>
             </VBox>
             <VBox fx:id="transactionForm" id="transactionForm" managed="false" visible="false" spacing="16" styleClass="panel transaction-form">

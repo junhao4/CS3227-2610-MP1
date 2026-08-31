@@ -2,8 +2,8 @@
 
 MoneyMap is a local JavaFX desktop application for recording Income and Expense
 transactions in Singapore dollars. The current build provides transaction
-creation and automatic local persistence inside the production application
-shell.
+creation, transaction-history review, and automatic local persistence inside
+the production application shell.
 
 ## Setup
 
@@ -66,6 +66,27 @@ are displayed as SGD with exactly two decimal places, for example `+S$600.00`
 and `−S$8.50`.
 
 Select **Cancel** to discard the unfinished form without saving a transaction.
+
+## Review and find transactions
+
+Open **Transactions** to review saved records. The list is ordered by date with
+the newest transactions first. Use the **Find transactions** controls above the
+list to narrow the displayed records:
+
+1. Select a **Month**, **Type**, or **Category** to show only matching
+   transactions. Leaving a selector at its `All ...` prompt does not restrict
+   the list.
+2. Enter a word or phrase in **Search notes** to find notes containing that
+   text. Searching is case-insensitive; an empty or whitespace-only search
+   does not restrict the list.
+3. Combine any of the controls when you need a more specific result. Every
+   active condition must match.
+4. Select **Clear filters** to restore the complete history.
+
+When no saved transaction matches the active conditions, MoneyMap displays
+**No matching transactions** and suggests changing or clearing the filters.
+Filtering and searching change only what is displayed; they do not edit or
+remove saved transactions.
 
 ### Transaction fields and validation
 
@@ -145,7 +166,8 @@ restore are not available yet.
 
 ## Keyboard and accessibility
 
-- All transaction inputs have visible labels and accessible descriptions.
+- Transaction-entry and history-filter controls have visible labels and
+  accessible descriptions.
 - Tab follows the visual control order through the list-first screen and the
   disclosed form.
 - **＋ Add transaction** reveals the form and moves focus to **Type**.
@@ -162,11 +184,10 @@ interaction still require manual checking on those target platforms.
 
 ## Current scope and limitations
 
-The current build supports recording and reviewing the displayed Income and
-Expense transactions only. It does not yet support:
+The current build supports recording, reviewing, filtering, and searching
+displayed Income and Expense transactions. It does not yet support:
 
 - editing or deleting transactions;
-- searching or filtering transaction history;
 - user-created, renamed, archived, or deleted categories;
 - budgets or Dashboard calculations;
 - import or export;

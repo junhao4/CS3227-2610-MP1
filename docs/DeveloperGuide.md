@@ -17,13 +17,14 @@ project checks from the repository root:
 - `verifyTransactionUi` loads the real Transactions FXML with a temporary data
   directory and verifies the list-first hierarchy, progressive form
   disclosure, focus transitions, type-compatible categories, valid creation,
-  validation feedback, fallback assignment, JSON save, reload, and visible
-  rows.
+  validation feedback, fallback assignment, newest-first history, combined
+  history filtering, note search, empty results, filter reset, JSON save,
+  reload, and visible rows.
 
 `verifyPrototypes` separately verifies that all eight exploratory prototype
 FXML resources still load. It does not test production behavior.
 
-The current JUnit suite contains 46 tests covering the domain, validation,
+The current JUnit suite contains 50 tests covering the domain, validation,
 service, path-resolution, and JSON-persistence rules. Useful focused commands
 are:
 
@@ -90,7 +91,7 @@ and persistence responsibilities:
 | Area | Main responsibilities |
 | --- | --- |
 | JavaFX presentation | `MoneyMapApp` assembles dependencies and creates the stage. `ApplicationController` owns shell navigation. `TransactionController`, `transactions.fxml`, and `moneymap.css` implement the list-first transaction workflow. `SgdFormatter` formats display values. |
-| Application/service | `TransactionService` loads state, supplies type-compatible categories, resolves fallback categories, creates transactions, and coordinates save-before-publish state changes. `DataRepository` is its persistence boundary. |
+| Application/service | `TransactionService` loads state, supplies type-compatible categories, resolves fallback categories, creates transactions, and exposes non-mutating transaction-history queries. `DataRepository` is its persistence boundary. |
 | Domain | `Transaction`, `TransactionType`, `MoneyAmount`, `Category`, `StarterCategoryCatalog`, and `ApplicationState` hold immutable data and enforce core invariants. |
 | Persistence | `ApplicationDirectoryResolver` chooses a stable application base. `JsonDataRepository` maps state to versioned JSON and performs load, validation, atomic replacement, and corrupt-file recovery. |
 
@@ -131,6 +132,22 @@ The clock and UUID supplier are injected, allowing tests to use a fixed date
 and deterministic transaction identity. Production uses the system clock and
 random UUIDs.
 
+### Transaction history query and display
+
+`TransactionController` supplies the optional month, type, category ID, and
+note-query values from the visible history controls to
+`TransactionService.findTransactions`. The service applies every supplied
+criterion and returns a new immutable result list ordered by transaction date
+descending. Note matching is case-insensitive after trimming the query; null,
+empty, and whitespace-only queries do not constrain the results. Querying
+never changes `ApplicationState`, so clearing filters restores the existing
+saved history without a persistence operation.
+
+The controller derives selectable months from saved transaction dates and
+offers all current categories as history filters. It displays a separate
+no-results message when records exist but none match the active criteria. This
+is a presentation distinction only; it does not alter the stored state.
+
 ## Domain and validation decisions
 
 Money amounts are stored as `BigDecimal` through `MoneyAmount` and normalized
@@ -151,8 +168,9 @@ permanent fallbacks. Category selectors are type-specific, while the service
 also enforces compatibility so invalid controller or persisted input cannot
 bypass the rule.
 
-Editing, deletion, filtering, search, custom category management, budgets, and
-Dashboard calculations are intentionally outside this increment.
+Editing, deletion, custom category management, budgets, and Dashboard
+calculations are intentionally outside this increment. Transaction-history
+filtering and note search are implemented.
 
 ## JSON persistence and recovery
 
@@ -194,7 +212,7 @@ investigation or a later recovery feature.
 
 ## Testing strategy and evidence
 
-The 44 JUnit tests use specification-based equivalence partitions and boundary
+The 50 JUnit tests use specification-based equivalence partitions and boundary
 values:
 
 - amount tests cover zero, positive values, scales zero through two, whitespace,
@@ -205,8 +223,10 @@ values:
 - catalog tests cover the exact starter sets and two distinct permanent
   fallbacks;
 - service tests cover injected today, type-specific categories, Income
-  creation, automatic fallback, mismatch rejection, save invocation, and
-  save-before-publish failure behavior;
+  creation, automatic fallback, mismatch rejection, save invocation,
+  save-before-publish failure behavior, newest-first history ordering, each
+  history filter, case-insensitive note search, combined queries, blank-query
+  handling, empty results, and non-mutation;
 - path tests cover configured development and packaged-JAR bases; and
 - JSON tests cover first launch, versioned round-trip, malformed data,
   unsupported future versions, valid-main orphan temporary files, recovery of
@@ -215,9 +235,11 @@ values:
   of a valid file after a failed temporary write.
 
 `TransactionUiSmokeTest` complements those tests at the integration level. It
-does not replace manual inspection: JavaFX resource lookup and focus-owner
-assertions cannot prove the rendered layout is visually correct on every
-platform.
+checks the visible history controls, newest-first displayed results, combined
+filters, case-insensitive note search, the no-results state, and Clear filters
+in addition to the transaction-creation workflow. It does not replace manual
+inspection: JavaFX resource lookup and focus-owner assertions cannot prove the
+rendered layout is visually correct on every platform.
 
 ## Instructions for Manual Testing
 
@@ -261,6 +283,22 @@ Use a disposable directory so the test cannot alter personal data.
 7. Confirm a validation error leaves the form open and a successful save
    collapses it.
 
+### Review and locate transaction history
+
+1. Save transactions across at least two months, with both Income and Expense
+   types, distinct categories, and distinguishable notes.
+2. Confirm the transaction list is ordered with the latest date first.
+3. Select each **Month**, **Type**, and **Category** filter separately and
+   confirm only matching records remain visible.
+4. Enter a word from a note in **Search notes**, then repeat using a different
+   letter case. Confirm the same matching records remain visible.
+5. Combine a month, type, category, and matching note query. Confirm every
+   displayed row matches all active criteria.
+6. Enter text that is absent from every note. Confirm the list shows **No
+   matching transactions** and does not show the no-transactions message.
+7. Select **Clear filters**. Confirm all saved rows return, then restart the
+   application and confirm the same records remain saved.
+
 ### Restart persistence
 
 1. Close MoneyMap after saving at least two distinct transactions.
@@ -298,8 +336,8 @@ Perform this only in the disposable test directory.
 
 ### Keyboard and layout
 
-1. Use Tab to reach the navigation and transaction controls; confirm focus is
-   visible and follows the visual order.
+1. Use Tab to reach the navigation, history-filter, and transaction controls;
+   confirm focus is visible and follows the visual order.
 2. Activate ordinary focused buttons with Space on macOS or Enter/Space on
    Windows and Linux.
 3. Confirm Add moves focus into the disclosed form and Cancel returns focus to
