@@ -1,6 +1,7 @@
 package cs3227.moneymap.service;
 
 import cs3227.moneymap.domain.ApplicationState;
+import cs3227.moneymap.domain.Budget;
 import cs3227.moneymap.domain.Category;
 import cs3227.moneymap.domain.MoneyAmount;
 import cs3227.moneymap.domain.StarterCategoryCatalog;
@@ -8,6 +9,7 @@ import cs3227.moneymap.domain.Transaction;
 import cs3227.moneymap.domain.TransactionType;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -15,6 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -71,6 +74,179 @@ public final class TransactionService {
      */
     public List<Category> allCategories() {
         return state.categories();
+    }
+
+    /**
+     * Returns budgets configured for the supplied calendar month.
+     *
+     * @param month calendar month to inspect
+     * @return configured budgets for the month
+     */
+    public List<Budget> budgetsFor(YearMonth month) {
+        Objects.requireNonNull(month, "Budget month is required.");
+        return state.budgets().stream()
+                .map(Budget::categoryId)
+                .distinct()
+                .map(categoryId -> budgetFor(categoryId, month).orElseThrow())
+                .toList();
+    }
+
+    /**
+     * Returns the optional budget for one expense category and calendar month.
+     *
+     * @param categoryId expense category identity
+     * @param month calendar month to inspect
+     * @return matching budget when configured
+     */
+    public Optional<Budget> budgetFor(UUID categoryId, YearMonth month) {
+        requireExpenseCategory(categoryId);
+        Objects.requireNonNull(month, "Budget month is required.");
+        Optional<Budget> override = state.budgets().stream()
+                .filter(budget -> !budget.repeatsMonthly()
+                        && budget.categoryId().equals(categoryId)
+                        && budget.month().equals(month))
+                .findFirst();
+        return override.or(() -> state.budgets().stream()
+                .filter(budget -> budget.categoryId().equals(categoryId) && budget.repeatsMonthly())
+                .findFirst());
+    }
+
+    /**
+     * Returns the separately configured every-month value for one expense category.
+     *
+     * @param categoryId expense category identity
+     * @return recurring value when configured
+     */
+    public Optional<Budget> recurringBudgetFor(UUID categoryId) {
+        requireExpenseCategory(categoryId);
+        return state.budgets().stream()
+                .filter(budget -> budget.categoryId().equals(categoryId) && budget.repeatsMonthly())
+                .findFirst();
+    }
+
+    /**
+     * Returns the separately configured value for one expense category and calendar month.
+     *
+     * @param categoryId expense category identity
+     * @param month calendar month to inspect
+     * @return month-only value when configured
+     */
+    public Optional<Budget> monthOnlyBudgetFor(UUID categoryId, YearMonth month) {
+        requireExpenseCategory(categoryId);
+        Objects.requireNonNull(month, "Budget month is required.");
+        return state.budgets().stream()
+                .filter(budget -> budget.categoryId().equals(categoryId)
+                        && !budget.repeatsMonthly() && budget.month().equals(month))
+                .findFirst();
+    }
+
+    /**
+     * Creates or replaces the budget for an expense category in a calendar month.
+     *
+     * @param categoryId expense category identity
+     * @param month calendar month covered by the budget
+     * @param amount plain non-negative SGD amount
+     * @return saved budget
+     */
+    public Budget setBudgetOverride(UUID categoryId, YearMonth month, String amount) {
+        Category category = requireExpenseCategory(categoryId);
+        Objects.requireNonNull(month, "Budget month is required.");
+        Budget budget = new Budget(category.id(), month, MoneyAmount.parse(amount));
+        ApplicationState candidate = state.withBudget(budget);
+        persist(candidate);
+        state = candidate;
+        return budget;
+    }
+
+    /**
+     * Creates or replaces an Expense category's default budget for every calendar month.
+     *
+     * @param categoryId expense category identity
+     * @param amount plain non-negative SGD amount
+     * @return saved recurring budget
+     */
+    public Budget setRecurringBudget(UUID categoryId, String amount) {
+        Category category = requireExpenseCategory(categoryId);
+        Budget budget = Budget.recurring(category.id(), MoneyAmount.parse(amount));
+        ApplicationState candidate = state.withBudget(budget);
+        persist(candidate);
+        state = candidate;
+        return budget;
+    }
+
+    /**
+     * Removes an expense category's every-month budget when one is configured.
+     *
+     * @param categoryId expense category identity
+     */
+    public void clearRecurringBudget(UUID categoryId) {
+        requireExpenseCategory(categoryId);
+        ApplicationState candidate = state.withoutBudget(categoryId, null, true);
+        persist(candidate);
+        state = candidate;
+    }
+
+    /**
+     * Removes an expense category's one-month budget override when one is configured.
+     *
+     * @param categoryId expense category identity
+     * @param month calendar month whose override should be removed
+     */
+    public void clearBudgetOverride(UUID categoryId, YearMonth month) {
+        requireExpenseCategory(categoryId);
+        Objects.requireNonNull(month, "Budget month is required.");
+        ApplicationState candidate = state.withoutBudget(categoryId, month, false);
+        persist(candidate);
+        state = candidate;
+    }
+
+    /**
+     * Calculates all expense transactions in a category for a fixed calendar month.
+     *
+     * @param categoryId expense category identity
+     * @param month calendar month to inspect
+     * @return exact total spent in the category and month
+     */
+    public MoneyAmount spendingFor(UUID categoryId, YearMonth month) {
+        Category category = requireExpenseCategory(categoryId);
+        Objects.requireNonNull(month, "Budget month is required.");
+        BigDecimal total = state.transactions().stream()
+                .filter(transaction -> transaction.type() == TransactionType.EXPENSE)
+                .filter(transaction -> transaction.category().id().equals(category.id()))
+                .filter(transaction -> YearMonth.from(transaction.date()).equals(month))
+                .map(transaction -> transaction.amount().value())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new MoneyAmount(total);
+    }
+
+    /**
+     * Returns percentage used unless a budget is absent or explicitly zero.
+     *
+     * @param categoryId expense category identity
+     * @param month calendar month to inspect
+     * @return percentage used when the budget has a positive amount
+     */
+    public Optional<BigDecimal> percentageUsed(UUID categoryId, YearMonth month) {
+        Optional<Budget> budget = budgetFor(categoryId, month);
+        if (budget.isEmpty() || budget.orElseThrow().amount().value().signum() == 0) {
+            return Optional.empty();
+        }
+        return Optional.of(spendingFor(categoryId, month).value()
+                .multiply(BigDecimal.valueOf(100))
+                .divide(budget.orElseThrow().amount().value(), 2, java.math.RoundingMode.HALF_UP));
+    }
+
+    /**
+     * Indicates whether actual expense spending exceeds an explicitly configured budget.
+     *
+     * @param categoryId expense category identity
+     * @param month calendar month to inspect
+     * @return whether spending is greater than the configured budget
+     */
+    public boolean isOverBudget(UUID categoryId, YearMonth month) {
+        return budgetFor(categoryId, month)
+                .map(budget -> spendingFor(categoryId, month).value().compareTo(budget.amount().value()) > 0)
+                .orElse(false);
     }
 
     /**
@@ -309,6 +485,19 @@ public final class TransactionService {
                 .orElseThrow(() -> new IllegalArgumentException("Selected category does not exist."));
         if (category.archived()) {
             throw new IllegalArgumentException("Archived categories cannot receive reassigned transactions.");
+        }
+        return category;
+    }
+
+    /** Finds a category that may receive a monthly expense budget. */
+    private Category requireExpenseCategory(UUID categoryId) {
+        Objects.requireNonNull(categoryId, "Budget category is required.");
+        Category category = state.categories().stream()
+                .filter(candidate -> candidate.id().equals(categoryId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Selected category does not exist."));
+        if (category.type() != TransactionType.EXPENSE) {
+            throw new IllegalArgumentException("Budgets can be set only for expense categories.");
         }
         return category;
     }

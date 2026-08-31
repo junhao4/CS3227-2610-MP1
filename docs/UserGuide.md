@@ -40,8 +40,8 @@ Use the navigation controls on the left to open an area:
 - **Transactions** — records and displays real Income and Expense
   transactions.
 - **Categories and Budgets** — creates, renames, archives, restores,
-  reassigns, and deletes custom Income and Expense categories. Monthly budgets
-  are not available yet.
+  reassigns, and deletes custom Income and Expense categories, and configures
+  monthly budgets for Expense categories.
 - **Data and Settings** — placeholder for backup and data-management tools.
 
 Click a navigation control, or press Tab until it has focus. On macOS, activate
@@ -135,8 +135,8 @@ the transaction type.
 
 ## Create a custom category
 
-Open **Categories and Budgets** to create an ordinary category for either
-Income or Expense:
+Open **Categories and Budgets** and select **＋ New category** to reveal the
+form for an ordinary category for either Income or Expense:
 
 1. Select the category type.
 2. Enter a name, such as `Investments`, `Loans`, or `Credit Cards`.
@@ -146,13 +146,12 @@ Names are trimmed before saving, must contain 1 to 40 characters, and must be
 unique without regard to letter case within the selected type. The same name
 may be used once for Income and once for Expense. Blank, overlong, or
 duplicate names are rejected with visible feedback and are not saved. A new
-category appears in the current-category list and in the compatible category
+category appears as a card in the current-category view and in the compatible category
 choices on the Transactions screen. Category names have no specialised
 account, investment, loan, or credit-card behavior.
 
-The current-category list scrolls vertically when it is taller than the
-window, so every saved category remains reachable without changing the window
-layout.
+The category-card grid scrolls vertically when it is taller than the window, so
+every saved category remains reachable without changing the window layout.
 
 ## Manage, reassign, or delete a category
 
@@ -164,16 +163,21 @@ when you want to stop using a category for new transactions. It remains attached
 to its historical transactions, is absent from the new-transaction category
 selector, and remains available when filtering transaction history.
 
-The normal category view shows active categories and the creation form. Select
+The normal category view shows active categories as cards. Select
+**＋ New category** only when you need the creation form. Select
 **View archived categories** to open the separate archived-category view. It
 does not show the creation form. Select **Manage**, then **Restore**, to return
 an archived category to active use and the matching new-transaction selector.
 If an active category of the same type already uses the same name, rename the
 archived category first, then restore it.
 
-Each category row has one labelled **Manage** control, keeping the list compact
-when you have many categories. Select it to reveal only the actions that make
-sense for that category. An unused ordinary category offers **Rename**,
+Each category card shows current-month spending and any applied budget. Expense
+cards include a compact progress bar; it is green through 50% used, yellow above
+50% through 80%, and red above 80% or when spending exceeds the budget. Income
+cards remain more compact because they do not have budget progress. Each card
+has one labelled **Manage** control, keeping lifecycle actions compact. Select
+it to reveal only the actions that make sense for that category. An unused
+ordinary category offers **Rename**,
 **Archive** or **Restore**, and **Delete**. A used ordinary category also offers
 **Reassign**, while **Delete** is disabled with an explanation until all of its
 transactions have been reassigned.
@@ -192,9 +196,45 @@ valid reassignment destinations for their matching transaction type. Category
 management actions provide visible feedback when an operation is invalid. All
 changes are saved automatically and remain after restarting MoneyMap.
 
+## Set a monthly expense budget
+
+Open **Categories and Budgets**, then select **Manage budgets**. This opens a
+budget-focused view so budget controls do not clutter ordinary category work.
+
+1. Use **View budgets for** to choose the calendar month to inspect. This
+   changes only the displayed list; the day does not matter.
+2. Each category card shows spending and the amount that applies in that
+   month. If a one-time amount takes priority over an every-month amount, the
+   card also shows the every-month amount below it.
+3. Select **Manage** beside an existing budget, or **Set budget** for a
+   category with no budget. Income categories are not offered.
+4. The category detail shows two saved values separately: **Every month** and
+   the selected month only. Select **Set** or **Change** beside exactly the
+   value you want to update. A saved value also has a **Remove** action.
+5. Enter a plain SGD amount, such as `0`, `50`, or `250.00`, without `S$` or
+   grouping commas, then select **Save budget**. Use **← Back to categories**
+   when you are done.
+
+An every-month amount applies until you change it. An amount saved for one
+month takes priority for that month only, without changing the every-month
+amount. The category detail keeps both values visible so this relationship is
+clear before you edit either one. Select **Remove** beside an every-month value
+or a selected-month value to delete only that budget scope. Removing a
+month-only override reveals the recurring value again when one is configured.
+
+Leaving a category without either kind of saved entry means it has no budget.
+An explicit `S$0.00` budget is different: it permits no spending, but MoneyMap
+still lets you record expense transactions. A blank, negative, or
+more-than-two-decimal amount is rejected with visible feedback and does not
+change the saved budget.
+
+Budgets are saved automatically and remain available after restarting
+MoneyMap. Category and budget cards show the available spending progress and
+over-budget state; the Dashboard budget presentation is not shown yet.
+
 ## Automatic local persistence
 
-MoneyMap saves every successful transaction and category change
+MoneyMap saves every successful transaction, category change, and budget change
 automatically and reloads the saved state the next time it starts. For a
 packaged application, the files are located beside the JAR:
 
@@ -248,7 +288,7 @@ The current build supports recording, reviewing, filtering, and searching
 displayed Income and Expense transactions. It does not yet support:
 
 - editing or deleting transactions;
-- budgets or Dashboard calculations;
+- Dashboard calculations or budget-status presentation;
 - import or export;
 - wallets, transfers, accounts, bank synchronisation, or specialised
   investment, loan, or credit-card behavior; or

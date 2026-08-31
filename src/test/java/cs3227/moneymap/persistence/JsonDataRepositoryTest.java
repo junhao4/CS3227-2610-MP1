@@ -1,6 +1,7 @@
 package cs3227.moneymap.persistence;
 
 import cs3227.moneymap.domain.ApplicationState;
+import cs3227.moneymap.domain.Budget;
 import cs3227.moneymap.domain.Category;
 import cs3227.moneymap.domain.MoneyAmount;
 import cs3227.moneymap.domain.Transaction;
@@ -70,6 +71,23 @@ class JsonDataRepositoryTest {
 
         assertEquals(custom, repository.load().state().categories().stream()
                 .filter(category -> category.id().equals(custom.id())).findFirst().orElseThrow());
+    }
+
+    @Test
+    void saveThenLoad_preservesRecurringBudgetIncludingExplicitZero() throws IOException {
+        JsonDataRepository repository = new JsonDataRepository(applicationDirectory);
+        ApplicationState initial = ApplicationState.withStarterCategories();
+        Category food = initial.categories().stream().filter(category -> category.name().equals("Food"))
+                .findFirst().orElseThrow();
+        Budget budget = Budget.recurring(food.id(), MoneyAmount.parse("0"));
+        ApplicationState saved = new ApplicationState(
+                initial.categories(), initial.transactions(), java.util.List.of(budget));
+
+        repository.save(saved);
+
+        assertEquals(saved, repository.load().state());
+        assertTrue(Files.readString(repository.dataFile(), StandardCharsets.UTF_8).contains("\"budgets\""));
+        assertTrue(repository.load().state().budgets().getFirst().repeatsMonthly());
     }
 
     @Test

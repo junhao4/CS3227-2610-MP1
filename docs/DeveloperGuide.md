@@ -30,13 +30,15 @@ executables:
   duplicate validation, type scoping, visible feedback, the configured vertical
   scroll container, active/archived-view switching, rename/archive/restore
   management-dialog progressive disclosure, reassignment/deletion confirmation
-  flows, fallback protection,
+  flows, fallback protection, recurring and month-only budget saving,
+  explicit-zero and invalid-amount feedback, budget removal and scope
+  preservation, stable category-card sizing and progress visibility,
   blocked-deletion feedback, archived-category filtering, and reload.
 
 `verifyPrototypes` separately verifies that all eight exploratory prototype
 FXML resources still load. It does not test production behavior.
 
-The current JUnit suite contains 49 tests covering the domain, validation,
+The current JUnit suite covers the domain, validation,
 service, path-resolution, and JSON-persistence rules. Useful focused commands
 are:
 
@@ -112,8 +114,8 @@ and persistence responsibilities:
 | Area | Main responsibilities |
 | --- | --- |
 | JavaFX presentation | `MoneyMapApp` assembles dependencies and creates the stage. `ApplicationController` owns shell navigation. `TransactionController` and `CategoryController` connect the transaction and custom-category workflows to their FXML views. `SgdFormatter` formats display values. |
-| Application/service | `TransactionService` loads state, supplies type-compatible categories, validates and creates custom categories, resolves fallback categories, creates transactions, safely reassigns or deletes categories, and exposes non-mutating transaction-history queries. `DataRepository` is its persistence boundary. |
-| Domain | `Transaction`, `TransactionType`, `MoneyAmount`, `Category`, `StarterCategoryCatalog`, and `ApplicationState` hold immutable data and enforce core invariants. |
+| Application/service | `TransactionService` loads state, supplies type-compatible categories, validates and creates custom categories, resolves fallback categories, creates transactions, safely reassigns or deletes categories, configures monthly expense budgets, calculates category spending and budget state, and exposes non-mutating transaction-history queries. `DataRepository` is its persistence boundary. |
+| Domain | `Transaction`, `TransactionType`, `MoneyAmount`, `Category`, `Budget`, `StarterCategoryCatalog`, and `ApplicationState` hold immutable data and enforce core invariants. |
 | Persistence | `ApplicationDirectoryResolver` chooses a stable application base. `JsonDataRepository` maps state to versioned JSON and performs load, validation, atomic replacement, and corrupt-file recovery. |
 
 The dependency direction is presentation → service → domain. Persistence
@@ -181,9 +183,9 @@ compatible transaction selector without a second category-management store.
 
 ### Category lifecycle flow
 
-`CategoryController` defaults to an active-category view with the creation
-form. A labelled control reveals the archived-category view, which hides the
-creation form. Each category row exposes only one **Manage** button; its dialog
+`CategoryController` defaults to an active-category card view with category
+creation hidden. The **＋ New category** control reveals the form, while the
+archived-category view hides both. Each category card exposes only one **Manage** button; its dialog
 progressively discloses valid lifecycle actions according to the category's
 state. Ordinary categories offer Rename and Archive or Restore. Used ordinary
 categories offer Reassign and show a disabled Delete action with the required
@@ -200,6 +202,45 @@ stable category ID when a category changes or is reassigned, and refuses a
 deletion that would leave a dangling reference. `categoriesFor` excludes
 archived categories from new transaction selection. History filters use
 `allCategories`, so archived categories remain discoverable there.
+
+### Monthly budget flow
+
+The Categories and Budgets landing view keeps category creation and lifecycle
+controls visible as a responsive card grid, exposing a single **Manage budgets**
+action. That action
+swaps to a focused budget view. Its **View budgets for** picker changes only
+the month used to render the card-based effective-budget entries. When a
+month-only value takes precedence over an every-month value, the card displays
+both: the effective amount on the main line and the every-month amount beneath
+it. This makes the precedence visible rather than hiding the saved default.
+
+A row's **Manage** or **Set budget** action then reveals a category-specific
+detail panel. The panel first displays the every-month and selected-month
+values independently. Its **Set** or **Change** actions reveal only the plain
+amount input for the value the user chose; the category and month are already
+fixed by the preceding view. `TransactionService.recurringBudgetFor` and
+`monthOnlyBudgetFor` support this presentation without exposing mutable state.
+When a value exists, the detail panel also exposes **Remove** for that scope.
+Removing a month-only value leaves the recurring scope intact, while removing
+the recurring value leaves any month-only override intact. The category landing
+cards use a fixed expense-card height so an over-budget message cannot displace
+the progress bar; income cards use a shorter fixed height because they have no
+budget progress content. Manage remains bottom-aligned and bold within each
+card.
+The service rejects Income categories and uses `MoneyAmount` validation, then
+constructs an immutable `Budget` whose identity is the category UUID and
+either a recurring scope or `YearMonth` override. `ApplicationState.withBudget`
+replaces entries only within the same scope. `budgetFor` resolves a matching
+month-only value before the recurring default, so there is at most one
+effective budget per category/month. As for transactions and category changes,
+the service saves the candidate state before publishing it.
+
+`spendingFor`, `percentageUsed`, and `isOverBudget` provide the calculation
+rules needed by the later Dashboard without introducing Dashboard UI early.
+They include all matching Expense transactions even when no budget exists;
+overspending is never a transaction-validation error. Percentage is absent for
+an unset or explicit-zero budget, while a zero budget is over budget as soon
+as its actual spending becomes positive.
 
 ## Domain and validation decisions
 
@@ -225,18 +266,29 @@ transactions. Restoring returns a category to active selection unless its name
 would clash with an active category of the same type. Permanent fallbacks cannot
 be renamed, archived, or restored.
 
-Permanent deletion, budgets, and Dashboard calculations are intentionally
-outside this increment. Custom category creation, renaming, archiving,
-restoring, and transaction-history filtering and note search are implemented.
+`Budget` applies only to an Expense category. It represents either a recurring
+monthly default or a fixed `YearMonth` one-time budget. The state rejects dangling
+budget categories, Income-category budgets, and duplicate entries within the
+same category/scope. A missing budget and an explicit zero budget are separate
+states. The service computes exact SGD spending with `BigDecimal`, permits
+spending beyond the limit, and intentionally returns no percentage for an unset
+or zero budget. Dashboard budget status and presentation remain a later
+increment.
+
+Custom category creation, lifecycle management, transaction-history filtering,
+and monthly budget configuration are implemented.
 
 ## JSON persistence and recovery
 
 `JsonDataRepository` currently writes schema version `1`. The saved document
-contains the current application state: starter and custom categories and
-transactions, including stable IDs,
-types, exact amount strings, ISO dates, category references, fallback flags,
-archived state, and notes. The schema version remains compatible with older
-category records because a missing archived flag loads as false.
+contains the current application state: starter and custom categories,
+transactions, and monthly budgets, including stable IDs, types, exact amount
+strings, ISO dates, category references, fallback flags, archived state, notes,
+and budget category references, optional ISO months, recurrence flags, and
+exact amount strings. The schema version remains compatible with older category
+records because a missing archived flag loads as false, with pre-budget
+documents because a missing budget list loads as empty, and with prior
+month-only budget records because a missing recurrence flag loads as false.
 
 On first launch with neither a main nor temporary file, the repository returns
 the fixed starter categories and an empty transaction list without creating a
@@ -286,12 +338,15 @@ values:
   transaction use, save invocation, save-before-publish failure behavior,
   newest-first history ordering, each
   history filter, case-insensitive note search, combined queries, blank-query
-  handling, empty results, and non-mutation;
+  handling, empty results, non-mutation, recurring defaults, month-only
+  overrides and their precedence, Expense-only validation, explicit zero
+  budgets, unbudgeted spending, overspending, and zero-percentage omission;
 - path tests cover configured development and packaged-JAR bases; and
 - JSON tests cover first launch, versioned round-trip, malformed data,
   unsupported future versions, valid-main orphan temporary files, recovery of
   a valid temporary first save, preservation of an invalid temporary first
-  save, invalid-date recovery from main and temporary files, and preservation
+  save, invalid-date recovery from main and temporary files, recurring
+  explicit-zero budget round-trip, and preservation
   of a valid file after a failed temporary write.
 
 `TransactionUiSmokeTest` complements those tests at the integration level. It
@@ -299,8 +354,11 @@ checks the visible history controls, newest-first displayed results, combined
 filters, case-insensitive note search, the no-results state, and Clear filters
 in addition to the transaction-creation workflow. `CategoryUiSmokeTest` checks
 custom-category creation, validation, type scoping, active/archived switching,
-restore controls, archived-category exclusion from new transactions, and
-reload. These checks do not replace manual
+restore controls, archived-category exclusion from new transactions, recurring
+  default and month-only budget configuration, removal of each budget scope,
+  preservation of the other scope, stable category-card heights, visible
+  over-budget progress, the visible monthly-default line when a one-time
+  amount applies, and reload. These checks do not replace manual
 inspection: JavaFX resource lookup and focus-owner assertions cannot prove the
 rendered layout is visually correct on every platform.
 
@@ -315,8 +373,8 @@ Use a disposable directory so the test cannot alter personal data.
 3. From that directory, run `java -jar MoneyMap.jar`.
 4. Confirm the title is `MoneyMap — Student Budget Tracker` and Dashboard opens
    initially.
-5. Open all four navigation destinations and confirm only Transactions exposes
-   implemented financial behavior.
+5. Open all four navigation destinations and confirm Transactions and
+   Categories and Budgets expose the implemented financial behavior.
 
 ### Progressive transaction form and starter categories
 
@@ -416,6 +474,33 @@ Use a disposable directory so the test cannot alter personal data.
    matching Income or Expense type.
 5. Restart the application and confirm the deletion and reassigned transaction
    category remain saved.
+
+### Configure monthly expense budgets
+
+1. Open **Categories and Budgets** and confirm category creation and lifecycle
+   controls are visible while the budget view is hidden.
+2. Select **Manage budgets**. Confirm a labelled **View budgets for** picker,
+   table-like effective-budget rows, and **← Back to categories** are visible.
+3. Select Food's **Set budget**, then **Set** beside **Every month**, enter
+   `0`, and save. Confirm the row shows `S$0.00 · Every month`.
+4. Select Food's **Manage**, then **Set** beside the viewed month, and save
+   `100.00`. Confirm the viewing month shows `S$100.00 · This month only` and
+   a second line, `Monthly budget: S$0.00 every month`. Select the next month
+   and confirm it shows `S$0.00 · Every month`.
+5. Return to the original month and select **Remove** beside the one-time
+   budget. Confirm the recurring `S$0.00` value becomes the applied budget and
+   the one-time value's **Remove** action disappears. Remove the recurring
+   value as well and confirm the category has no budget; save the two values
+   again for the remaining checks.
+6. Try blank, negative, and three-decimal values. Confirm each gives text
+   feedback and leaves the previous saved budget unchanged.
+7. Confirm Income categories are not offered. Save Expense transactions after
+   setting both a normal and zero budget; neither transaction should be
+   blocked.
+8. On the category landing view, confirm expense cards have a consistent
+   height, over-budget cards retain their progress bars, Manage is bold and
+   bottom-aligned, and income cards are more compact. Restart MoneyMap and confirm both the recurring default and the selected
+   month's one-time budget remain listed.
 
 ### Restart persistence
 

@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.google.gson.Strictness;
 import cs3227.moneymap.domain.ApplicationState;
+import cs3227.moneymap.domain.Budget;
 import cs3227.moneymap.domain.Category;
 import cs3227.moneymap.domain.MoneyAmount;
 import cs3227.moneymap.domain.StarterCategoryCatalog;
@@ -21,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -154,7 +156,12 @@ public final class JsonDataRepository implements DataRepository {
                         transaction.amount().toString(), transaction.date().toString(),
                         transaction.category().id().toString(), transaction.note()))
                 .toList();
-        return new PersistedState(CURRENT_VERSION, categories, transactions);
+        List<PersistedBudget> budgets = state.budgets().stream()
+                .map(budget -> new PersistedBudget(budget.categoryId().toString(),
+                        budget.month() == null ? null : budget.month().toString(), budget.amount().toString(),
+                        budget.repeatsMonthly()))
+                .toList();
+        return new PersistedState(CURRENT_VERSION, categories, transactions, budgets);
     }
 
     /** Validates a parsed persistence document and reconstructs immutable application state. */
@@ -165,6 +172,7 @@ public final class JsonDataRepository implements DataRepository {
         }
         Objects.requireNonNull(persisted.categories(), "Saved categories are required.");
         Objects.requireNonNull(persisted.transactions(), "Saved transactions are required.");
+        List<PersistedBudget> persistedBudgets = persisted.budgets() == null ? List.of() : persisted.budgets();
 
         List<Category> categories = new ArrayList<>();
         Map<UUID, Category> categoriesById = new HashMap<>();
@@ -195,7 +203,14 @@ public final class JsonDataRepository implements DataRepository {
             transactions.add(new Transaction(id, TransactionType.valueOf(item.type()),
                     MoneyAmount.parse(item.amount()), LocalDate.parse(item.date()), category, item.note()));
         }
-        return new ApplicationState(categories, transactions);
+        List<Budget> budgets = new ArrayList<>();
+        for (PersistedBudget item : persistedBudgets) {
+            Objects.requireNonNull(item, "Saved budget cannot be null.");
+            budgets.add(new Budget(UUID.fromString(item.categoryId()),
+                    item.month() == null ? null : YearMonth.parse(item.month()), MoneyAmount.parse(item.amount()),
+                    item.repeatsMonthly()));
+        }
+        return new ApplicationState(categories, transactions, budgets);
     }
 
     /** Ensures each transaction type retains its required permanent fallback category. */
@@ -209,7 +224,7 @@ public final class JsonDataRepository implements DataRepository {
     }
 
     private record PersistedState(int version, List<PersistedCategory> categories,
-                                  List<PersistedTransaction> transactions) {
+                                  List<PersistedTransaction> transactions, List<PersistedBudget> budgets) {
     }
 
     private record PersistedCategory(String id, String type, String name, boolean permanentFallback, boolean archived) {
@@ -217,5 +232,8 @@ public final class JsonDataRepository implements DataRepository {
 
     private record PersistedTransaction(String id, String type, String amount, String date,
                                         String categoryId, String note) {
+    }
+
+    private record PersistedBudget(String categoryId, String month, String amount, boolean repeatsMonthly) {
     }
 }

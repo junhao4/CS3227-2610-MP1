@@ -16,6 +16,7 @@ public class PrototypeSmokeTest extends Application {
             "/fxml/transactions-b.fxml",
             "/fxml/categories-a.fxml",
             "/fxml/categories-b.fxml",
+            "/fxml/categories-c.fxml",
             "/fxml/settings.fxml"
     );
 

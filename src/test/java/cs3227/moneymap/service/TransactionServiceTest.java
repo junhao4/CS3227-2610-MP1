@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -325,6 +326,110 @@ class TransactionServiceTest {
 
         assertEquals(List.of(income), historyService.findTransactions(null, null, incomeFallback.id(), null));
         assertEquals(List.of(expense), historyService.findTransactions(null, null, expenseFallback.id(), null));
+    }
+
+    @Test
+    void setBudget_monthOverrideReplacesSameCalendarMonthAndPersistsExplicitZero() {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        YearMonth august = YearMonth.of(2026, 8);
+
+        service.setBudgetOverride(food.id(), august, "100.00");
+        service.setBudgetOverride(food.id(), august, "0");
+
+        assertEquals(1, service.budgetsFor(august).size());
+        assertEquals(MoneyAmount.parse("0"), service.budgetFor(food.id(), august).orElseThrow().amount());
+        assertEquals(2, repository.saveCount);
+        assertEquals(List.of(MoneyAmount.parse("0")), repository.savedState.budgets().stream()
+                .map(budget -> budget.amount()).toList());
+    }
+
+    @Test
+    void setRecurringBudget_appliesEveryMonthUntilMonthOverrideTakesPrecedence() {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        YearMonth august = YearMonth.of(2026, 8);
+        YearMonth september = YearMonth.of(2026, 9);
+
+        service.setRecurringBudget(food.id(), "300.00");
+        service.setBudgetOverride(food.id(), august, "450.00");
+
+        assertEquals(MoneyAmount.parse("450.00"), service.budgetFor(food.id(), august).orElseThrow().amount());
+        assertEquals(MoneyAmount.parse("300.00"), service.budgetFor(food.id(), september).orElseThrow().amount());
+        assertTrue(service.budgetFor(food.id(), september).orElseThrow().repeatsMonthly());
+        assertEquals(2, repository.saveCount);
+    }
+
+    @Test
+    void configuredBudgets_exposeRecurringAndMonthOnlyValuesSeparately() {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        YearMonth august = YearMonth.of(2026, 8);
+
+        service.setRecurringBudget(food.id(), "300.00");
+        service.setBudgetOverride(food.id(), august, "450.00");
+
+        assertEquals(MoneyAmount.parse("300.00"), service.recurringBudgetFor(food.id()).orElseThrow().amount());
+        assertEquals(MoneyAmount.parse("450.00"), service.monthOnlyBudgetFor(food.id(), august)
+                .orElseThrow().amount());
+    }
+
+    @Test
+    void clearBudgetOverride_removesOnlySelectedMonthAndRevealsRecurringValue() {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        YearMonth august = YearMonth.of(2026, 8);
+
+        service.setRecurringBudget(food.id(), "300.00");
+        service.setBudgetOverride(food.id(), august, "450.00");
+        service.clearBudgetOverride(food.id(), august);
+
+        assertTrue(service.monthOnlyBudgetFor(food.id(), august).isEmpty());
+        assertEquals(MoneyAmount.parse("300.00"), service.budgetFor(food.id(), august)
+                .orElseThrow().amount());
+    }
+
+    @Test
+    void clearRecurringBudget_removesEveryMonthValueWithoutRemovingOverrides() {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        YearMonth august = YearMonth.of(2026, 8);
+
+        service.setRecurringBudget(food.id(), "300.00");
+        service.setBudgetOverride(food.id(), august, "450.00");
+        service.clearRecurringBudget(food.id());
+
+        assertTrue(service.recurringBudgetFor(food.id()).isEmpty());
+        assertEquals(MoneyAmount.parse("450.00"), service.budgetFor(food.id(), august)
+                .orElseThrow().amount());
+    }
+
+    @Test
+    void setBudget_rejectsIncomeNegativeAndExcessivePrecisionWithoutSaving() {
+        Category income = categoryNamed("Salary", TransactionType.INCOME);
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        YearMonth august = YearMonth.of(2026, 8);
+
+        assertThrows(IllegalArgumentException.class, () -> service.setRecurringBudget(income.id(), "10"));
+        assertThrows(IllegalArgumentException.class, () -> service.setBudgetOverride(food.id(), august, "-1"));
+        assertThrows(IllegalArgumentException.class, () -> service.setRecurringBudget(food.id(), "1.001"));
+
+        assertEquals(0, repository.saveCount);
+        assertTrue(service.budgetFor(food.id(), august).isEmpty());
+    }
+
+    @Test
+    void budgetCalculations_includeUnbudgetedSpendingAllowOverspendingAndOmitZeroPercentage() {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        Category transport = categoryNamed("Transport", TransactionType.EXPENSE);
+        YearMonth august = YearMonth.of(2026, 8);
+        service.createTransaction(TransactionType.EXPENSE, "12.50", LocalDate.of(2026, 8, 10), food.id(), "Lunch");
+        service.createTransaction(TransactionType.EXPENSE, "7.50", LocalDate.of(2026, 8, 11), transport.id(), "Bus");
+
+        service.setBudgetOverride(food.id(), august, "10.00");
+        service.setRecurringBudget(transport.id(), "0.00");
+
+        assertEquals(MoneyAmount.parse("12.50"), service.spendingFor(food.id(), august));
+        assertEquals(MoneyAmount.parse("7.50"), service.spendingFor(transport.id(), august));
+        assertEquals(new BigDecimal("125.00"), service.percentageUsed(food.id(), august).orElseThrow());
+        assertTrue(service.percentageUsed(transport.id(), august).isEmpty());
+        assertTrue(service.isOverBudget(food.id(), august));
+        assertTrue(service.isOverBudget(transport.id(), august));
     }
 
     private Category categoryNamed(String name, TransactionType type) {

@@ -2,32 +2,51 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.VBox?>
 <ScrollPane fx:id="categoryScrollPane" id="categoriesAndBudgetsView" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" xmlns="http://javafx.com/javafx/17.0.0" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs3227.moneymap.CategoryController">
     <content>
         <VBox spacing="14" styleClass="page">
             <padding><Insets top="42" right="48" bottom="42" left="48" /></padding>
-            <Label text="Categories and Budgets" styleClass="page-title" />
-            <Label text="Organise transactions and set monthly spending limits here." styleClass="muted" />
-            <HBox spacing="8">
-                <Button fx:id="activeCategoriesButton" id="activeCategoriesButton" text="Active categories" onAction="#showActiveCategories" accessibleText="Show active categories" />
-                <Button fx:id="archivedCategoriesButton" id="archivedCategoriesButton" text="View archived categories" onAction="#showArchivedCategories" accessibleText="Show archived categories" />
-            </HBox>
-            <VBox fx:id="categoryCreationPanel" id="categoryCreationPanel" spacing="14" styleClass="panel category-panel">
-                <Label text="Create a category" styleClass="section-title" />
-                <Label text="Categories are specific to Income or Expense." styleClass="muted" />
-                <ComboBox fx:id="categoryTypeComboBox" id="categoryTypeComboBox" promptText="Type" accessibleText="Category type" maxWidth="Infinity" />
-                <TextField fx:id="categoryNameField" id="categoryNameField" promptText="e.g. Investments" accessibleText="Category name, maximum 40 characters" />
-                <Button id="createCategoryButton" text="Create category" onAction="#createCategory" defaultButton="true" styleClass="primary-button" accessibleText="Create category" />
-                <Label fx:id="categoryValidationLabel" id="categoryValidationLabel" managed="false" visible="false" wrapText="true" styleClass="validation-error" />
+            <VBox fx:id="categoryLandingView" spacing="14">
+                <Label text="Categories and Budgets" styleClass="page-title" />
+                <Label text="Organise categories first. Set spending limits when you need them." styleClass="muted" />
+                <HBox spacing="8" alignment="CENTER_LEFT"><Button fx:id="activeCategoriesButton" id="activeCategoriesButton" text="Active categories" onAction="#showActiveCategories" accessibleText="Show active categories" styleClass="secondary-button" /><Button fx:id="archivedCategoriesButton" id="archivedCategoriesButton" text="View archived categories" onAction="#showArchivedCategories" accessibleText="Show archived categories" styleClass="secondary-button" /><Label HBox.hgrow="ALWAYS" /><Button fx:id="manageBudgetsButton" id="manageBudgetsButton" managed="false" visible="false" text="Manage budgets" onAction="#showBudgetManager" accessibleText="Manage budgets" styleClass="secondary-button" /><Button fx:id="newCategoryButton" id="newCategoryButton" text="＋ New category" onAction="#showCategoryCreation" accessibleText="Show new category form" styleClass="primary-button" /></HBox>
+                <VBox fx:id="categoryCreationPanel" id="categoryCreationPanel" managed="false" visible="false" spacing="14" styleClass="panel category-panel">
+                    <Label text="Create a category" styleClass="section-title" />
+                    <Label text="Categories are specific to Income or Expense." styleClass="muted" />
+                    <ComboBox fx:id="categoryTypeComboBox" id="categoryTypeComboBox" promptText="Type" accessibleText="Category type" maxWidth="Infinity" />
+                    <TextField fx:id="categoryNameField" id="categoryNameField" promptText="e.g. Investments" accessibleText="Category name, maximum 40 characters" />
+                    <Button id="createCategoryButton" text="Create category" onAction="#createCategory" defaultButton="true" styleClass="primary-button" accessibleText="Create category" />
+                    <Label fx:id="categoryValidationLabel" id="categoryValidationLabel" managed="false" visible="false" wrapText="true" styleClass="validation-error" />
+                </VBox>
+                <VBox spacing="12"><Label fx:id="categoryListTitle" id="categoryListTitle" text="Expense categories" styleClass="section-title" /><FlowPane fx:id="categoryRows" id="categoryRows" hgap="14" vgap="14" /></VBox>
+                <VBox spacing="12"><Label fx:id="incomeListTitle" id="incomeListTitle" text="Income categories" styleClass="section-title" /><FlowPane fx:id="incomeCategoryRows" id="incomeCategoryRows" hgap="14" vgap="14" /></VBox>
             </VBox>
-            <VBox spacing="8" styleClass="panel category-panel">
-                <Label fx:id="categoryListTitle" id="categoryListTitle" text="Current categories" styleClass="section-title" />
-                <VBox fx:id="categoryRows" id="categoryRows" spacing="4" />
+            <VBox fx:id="budgetManagerView" id="budgetManagerView" managed="false" visible="false" spacing="14">
+                <Button fx:id="backToCategoriesButton" id="backToCategoriesButton" text="← Back to categories" onAction="#showCategories" accessibleText="Back to categories" styleClass="text-button" />
+                <Label text="Budgets" styleClass="page-title" />
+                <Label text="See what applies in one month, then manage a category only when needed." styleClass="muted" />
+                <HBox spacing="10" styleClass="budget-month-bar"><Label text="View budgets for" styleClass="row-label" /><DatePicker fx:id="viewBudgetMonthPicker" id="viewBudgetMonthPicker" accessibleText="View budgets for month" /><Label text="The month changes this list only." styleClass="muted" /></HBox>
+                <VBox fx:id="budgetListPanel" spacing="0" styleClass="panel budget-list-panel"><HBox styleClass="table-header"><Label text="CATEGORY" prefWidth="230" /><Label text="BUDGET" prefWidth="150" /><Label text="APPLIES" prefWidth="150" /><Label HBox.hgrow="ALWAYS" /></HBox><VBox spacing="0"><Label fx:id="budgetListTitle" id="budgetListTitle" styleClass="visually-hidden" /><VBox fx:id="budgetRows" id="budgetRows" /></VBox></VBox>
+                <VBox fx:id="budgetDetailPanel" id="budgetDetailPanel" managed="false" visible="false" spacing="10" styleClass="tip-card budget-detail-panel">
+                    <HBox><Label fx:id="budgetEditorTitle" id="budgetEditorTitle" text="Manage budget" styleClass="section-title" /><Label HBox.hgrow="ALWAYS" /><Button text="Close" onAction="#hideBudgetEditor" styleClass="text-button" /></HBox>
+                    <Label fx:id="budgetDetailMonthLabel" id="budgetDetailMonthLabel" styleClass="muted" />
+                    <Label fx:id="budgetAppliedSummaryLabel" id="budgetAppliedSummaryLabel" styleClass="section-title" wrapText="true" />
+                    <HBox fx:id="recurringBudgetRow" id="recurringBudgetRow" spacing="10" styleClass="budget-detail-row"><VBox spacing="2"><Label text="Recurring baseline (every month)" styleClass="row-label" /><Label fx:id="recurringBudgetValueLabel" id="recurringBudgetValueLabel" styleClass="muted" /></VBox><Label HBox.hgrow="ALWAYS" /><Button fx:id="changeRecurringBudgetButton" id="changeRecurringBudgetButton" text="Set" onAction="#editRecurringBudget" accessibleText="Set every-month budget" styleClass="text-button" /><Button fx:id="removeRecurringBudgetButton" id="removeRecurringBudgetButton" text="Remove" onAction="#removeRecurringBudget" accessibleText="Remove every-month budget" managed="false" visible="false" styleClass="text-button" /></HBox>
+                    <HBox fx:id="monthBudgetRow" id="monthBudgetRow" spacing="10" styleClass="budget-detail-row"><VBox spacing="2"><Label fx:id="monthBudgetLabel" id="monthBudgetLabel" styleClass="row-label" /><Label fx:id="monthBudgetValueLabel" id="monthBudgetValueLabel" styleClass="muted" /></VBox><Label HBox.hgrow="ALWAYS" /><Button fx:id="changeMonthBudgetButton" id="changeMonthBudgetButton" text="Set" onAction="#editMonthBudget" accessibleText="Set one-time budget" styleClass="text-button" /><Button fx:id="removeMonthBudgetButton" id="removeMonthBudgetButton" text="Remove" onAction="#removeMonthBudget" accessibleText="Remove one-time budget" managed="false" visible="false" styleClass="text-button" /></HBox>
+                    <VBox fx:id="budgetEditorPanel" id="budgetEditorPanel" managed="false" visible="false" spacing="8">
+                        <Label fx:id="budgetEditPromptLabel" id="budgetEditPromptLabel" styleClass="row-label" />
+                        <TextField fx:id="budgetAmountField" id="budgetAmountField" promptText="e.g. 250.00" accessibleText="Budget amount in Singapore dollars" />
+                        <HBox spacing="8"><Button id="setBudgetButton" text="Save budget" onAction="#setBudget" styleClass="primary-button" accessibleText="Save budget" /><Button text="Cancel" onAction="#hideBudgetForm" styleClass="text-button" /></HBox>
+                        <Label fx:id="budgetValidationLabel" id="budgetValidationLabel" managed="false" visible="false" wrapText="true" styleClass="validation-error" />
+                    </VBox>
+                </VBox>
             </VBox>
         </VBox>
     </content>

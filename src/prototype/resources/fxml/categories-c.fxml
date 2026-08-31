@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="20" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs3227.prototype.BudgetDisclosurePrototypeController" styleClass="page">
+    <padding><Insets top="34" right="42" bottom="34" left="42" /></padding>
+    <VBox fx:id="categoryLandingView" spacing="20">
+        <HBox alignment="CENTER_LEFT">
+            <VBox spacing="4">
+                <Label text="Categories and Budgets" styleClass="page-title" />
+                <Label text="Organise your categories. Set spending limits when you need them." styleClass="muted" />
+            </VBox>
+            <Label HBox.hgrow="ALWAYS" />
+            <Button text="＋ New category" styleClass="primary-button" />
+        </HBox>
+        <VBox spacing="10" styleClass="panel">
+            <HBox alignment="CENTER_LEFT">
+                <Label text="Current categories" styleClass="section-title" />
+                <Label HBox.hgrow="ALWAYS" />
+                <Button text="View archived" styleClass="text-button" />
+            </HBox>
+            <Separator />
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="category-row-prototype"><Label text="Food · Expense" styleClass="row-label" /><Label HBox.hgrow="ALWAYS" /><Button text="Manage" styleClass="text-button" /></HBox>
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="category-row-prototype"><Label text="Transport · Expense" styleClass="row-label" /><Label HBox.hgrow="ALWAYS" /><Button text="Manage" styleClass="text-button" /></HBox>
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="category-row-prototype"><Label text="Entertainment · Expense" styleClass="row-label" /><Label HBox.hgrow="ALWAYS" /><Button text="Manage" styleClass="text-button" /></HBox>
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="category-row-prototype"><Label text="Salary · Income" styleClass="row-label" /><Label HBox.hgrow="ALWAYS" /><Button text="Manage" styleClass="text-button" /></HBox>
+        </VBox>
+        <VBox spacing="10" styleClass="budget-entry-card">
+            <HBox alignment="CENTER_LEFT">
+                <VBox spacing="4">
+                    <Label text="Budgets" styleClass="section-title" />
+                    <Label text="Review monthly limits and set them only when needed." styleClass="muted" />
+                </VBox>
+                <Label HBox.hgrow="ALWAYS" />
+                <Button text="Manage budgets" onAction="#showBudgetManager" styleClass="secondary-button" />
+            </HBox>
+        </VBox>
+    </VBox>
+    <VBox fx:id="budgetManagerView" managed="false" visible="false" spacing="18">
+        <HBox alignment="CENTER_LEFT">
+            <Button text="← Back to categories" onAction="#showCategories" styleClass="text-button" />
+            <Label HBox.hgrow="ALWAYS" />
+            <Label text="Prototype · visual only" styleClass="build-marker" />
+        </HBox>
+        <VBox spacing="4">
+            <Label text="Budgets" styleClass="page-title" />
+            <Label text="See what applies in one month, then manage a category only when needed." styleClass="muted" />
+        </VBox>
+        <HBox alignment="CENTER_LEFT" spacing="10" styleClass="budget-month-bar">
+            <Label text="View budgets for" styleClass="row-label" />
+            <ComboBox prefWidth="180" promptText="August 2026" />
+            <Label text="The month changes this list only." styleClass="muted" />
+        </HBox>
+        <VBox spacing="0" styleClass="panel budget-list-panel">
+            <HBox styleClass="table-header"><Label text="CATEGORY" prefWidth="230" /><Label text="BUDGET" prefWidth="180" /><Label text="APPLIES" prefWidth="170" /><Label HBox.hgrow="ALWAYS" /></HBox>
+            <HBox alignment="CENTER_LEFT" styleClass="budget-table-row"><Label text="Food" prefWidth="230" styleClass="row-label" /><Label text="S$450.00" prefWidth="180" styleClass="amount-label" /><Label text="This month only" prefWidth="170" styleClass="warning" /><Label HBox.hgrow="ALWAYS" /><Button text="Manage" styleClass="text-button" /></HBox>
+            <HBox alignment="CENTER_LEFT" styleClass="budget-table-row"><Label text="Transport" prefWidth="230" styleClass="row-label" /><Label text="S$80.00" prefWidth="180" styleClass="amount-label" /><Label text="Every month" prefWidth="170" styleClass="positive" /><Label HBox.hgrow="ALWAYS" /><Button text="Manage" styleClass="text-button" /></HBox>
+            <HBox alignment="CENTER_LEFT" styleClass="budget-table-row"><Label text="Entertainment" prefWidth="230" styleClass="row-label" /><Label text="No budget" prefWidth="180" styleClass="muted" /><Label text="—" prefWidth="170" styleClass="muted" /><Label HBox.hgrow="ALWAYS" /><Button text="Set budget" styleClass="text-button" /></HBox>
+        </VBox>
+        <VBox spacing="8" styleClass="tip-card">
+            <Label text="Food has a monthly budget too" styleClass="section-title" />
+            <Label text="It normally uses S$300.00 every month. August uses S$450.00 this month only." styleClass="muted" />
+            <Button text="Manage Food budget" styleClass="text-button" />
+        </VBox>
+    </VBox>
+</VBox>

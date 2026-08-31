@@ -45,6 +45,11 @@ public class PrototypeController {
     }
 
     @FXML
+    private void showCategoriesC() {
+        load("/fxml/categories-c.fxml");
+    }
+
+    @FXML
     private void showSettings() {
         load("/fxml/settings.fxml");
     }
