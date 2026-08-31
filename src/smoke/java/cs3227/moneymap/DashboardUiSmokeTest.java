@@ -156,6 +156,10 @@ public class DashboardUiSmokeTest extends Application {
         require(quickTotals != null && quickTotals.minWidth(-1) >= 190,
                 "Quick totals card lacks a responsive minimum width: "
                         + (quickTotals == null ? "missing" : quickTotals.minWidth(-1)));
+        require(quickTotals.getStyleClass().contains("category-card")
+                        && quickTotals.getStyleClass().contains("quick-totals"),
+                "Quick totals card lacks separate category-card and quick-totals CSS classes: "
+                        + quickTotals.getStyleClass());
     }
 
     private static void assertNegativeNetBalance(Parent view) {

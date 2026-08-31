@@ -12,7 +12,7 @@
             xmlns="http://javafx.com/javafx/17.0.7" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="cs3227.moneymap.DashboardController">
     <content>
-        <VBox spacing="18" fillWidth="true" styleClass="page dashboard-page">
+        <VBox spacing="18" fillWidth="true" styleClass="page, dashboard-page">
     <padding><Insets top="34" right="42" bottom="34" left="42" /></padding>
             <HBox alignment="CENTER_LEFT" spacing="14">
                 <VBox HBox.hgrow="ALWAYS" spacing="4">
@@ -31,12 +31,12 @@
             <ColumnConstraints percentWidth="70" hgrow="ALWAYS" />
             <ColumnConstraints percentWidth="30" minWidth="190" hgrow="SOMETIMES" />
         </columnConstraints>
-        <VBox GridPane.columnIndex="0" styleClass="panel chart-panel" spacing="10">
+        <VBox GridPane.columnIndex="0" styleClass="panel, chart-panel" spacing="10">
             <Label text="Budget vs spending" styleClass="section-title" />
             <VBox fx:id="budgetRows" spacing="8" />
         </VBox>
                 <VBox fx:id="quickTotalsCard" GridPane.columnIndex="1" minWidth="190" maxWidth="Infinity"
-                      spacing="8" styleClass="category-card quick-totals">
+                      spacing="8" styleClass="category-card, quick-totals">
             <Label text="Quick totals" styleClass="section-title" />
             <Label text="Income" styleClass="card-label" />
             <Label fx:id="incomeTotal" styleClass="metric-value small" />
