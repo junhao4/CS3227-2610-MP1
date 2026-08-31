@@ -9,6 +9,8 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ChoiceDialog;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TextField;
@@ -16,6 +18,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
 /** Connects the Categories view to custom category creation and persistence. */
@@ -114,22 +117,70 @@ public final class CategoryController {
         Label label = new Label(category.name() + " · " + displayType(category.type()));
         label.getStyleClass().add("category-row");
         HBox row = new HBox(8, label);
-        Button rename = new Button("Rename");
-        rename.setAccessibleText("Rename " + category.name());
-        rename.setOnAction(event -> renameCategory(category));
-        Button lifecycleAction = new Button(showingArchived ? "Restore" : "Archive");
-        lifecycleAction.setId(showingArchived ? "restoreCategoryButton" : "archiveCategoryButton");
-        lifecycleAction.setAccessibleText((showingArchived ? "Restore " : "Archive ") + category.name());
-        lifecycleAction.setDisable(category.permanentFallback());
-        lifecycleAction.setOnAction(event -> {
+        Button manage = new Button("Manage");
+        manage.setAccessibleText("Manage " + category.name());
+        manage.setOnAction(event -> manageCategory(category));
+        row.getChildren().add(manage);
+        return row;
+    }
+
+    /** Reveals only the management actions that are currently valid for the category. */
+    private void manageCategory(Category category) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Manage category");
+        dialog.setHeaderText(category.name() + " · " + displayType(category.type()));
+        if (category.permanentFallback()) {
+            dialog.setContentText("Uncategorised is a permanent fallback category and cannot be changed.");
+            dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+            dialog.showAndWait();
+            return;
+        }
+
+        int transactionCount = transactionsUsing(category);
+        dialog.setContentText(transactionCount == 0
+                ? "This category is unused and can be deleted."
+                : "This category is used by " + transactionCount + " "
+                + (transactionCount == 1 ? "transaction" : "transactions")
+                + ". Reassign them before deleting.");
+        ButtonType rename = new ButtonType("Rename");
+        ButtonType lifecycle = new ButtonType(showingArchived ? "Restore" : "Archive");
+        ButtonType reassign = new ButtonType("Reassign");
+        ButtonType delete = new ButtonType("Delete");
+        dialog.getDialogPane().getButtonTypes().addAll(rename, lifecycle);
+        if (transactionCount > 0) {
+            dialog.getDialogPane().getButtonTypes().add(reassign);
+        }
+        dialog.getDialogPane().getButtonTypes().addAll(delete, ButtonType.CANCEL);
+        if (transactionCount > 0) {
+            ((Button) dialog.getDialogPane().lookupButton(delete)).setDisable(true);
+        }
+        dialog.showAndWait().ifPresent(action -> handleManagementAction(
+                action, rename, lifecycle, reassign, delete, category));
+    }
+
+    /** Dispatches the category management action after its dialog has closed. */
+    private void handleManagementAction(ButtonType action, ButtonType rename, ButtonType lifecycle,
+                                        ButtonType reassign, ButtonType delete, Category category) {
+        if (action == rename) {
+            renameCategory(category);
+        } else if (action == lifecycle) {
             if (showingArchived) {
                 restoreCategory(category);
             } else {
                 archiveCategory(category);
             }
-        });
-        row.getChildren().addAll(rename, lifecycleAction);
-        return row;
+        } else if (action == reassign) {
+            reassignCategory(category);
+        } else if (action == delete) {
+            deleteCategory(category);
+        }
+    }
+
+    /** Counts transactions assigned to the category for the state-aware management dialog. */
+    private int transactionsUsing(Category category) {
+        return (int) service.transactions().stream()
+                .filter(transaction -> transaction.category().id().equals(category.id()))
+                .count();
     }
 
     private void renameCategory(Category category) {
@@ -169,6 +220,57 @@ public final class CategoryController {
         } catch (RuntimeException exception) {
             showValidation(messageFor(exception));
         }
+    }
+
+    /** Moves every transaction to a compatible active category after explicit confirmation. */
+    private void reassignCategory(Category source) {
+        List<Category> targets = service.categoriesFor(source.type()).stream()
+                .filter(category -> !category.id().equals(source.id()))
+                .toList();
+        if (targets.isEmpty()) {
+            showValidation("No compatible category is available for reassignment.");
+            return;
+        }
+        ChoiceDialog<Category> selection = new ChoiceDialog<>(targets.getFirst(), targets);
+        selection.setTitle("Reassign transactions");
+        selection.setHeaderText("Reassign transactions from " + source.name());
+        selection.setContentText("Move all transactions to:");
+        selection.showAndWait().ifPresent(target -> confirmReassignment(source, target));
+    }
+
+    /** Confirms and performs the irreversible transaction-category reassignment. */
+    private void confirmReassignment(Category source, Category target) {
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Confirm reassignment");
+        confirmation.setHeaderText("Move transactions from " + source.name() + " to " + target.name() + "?");
+        confirmation.setContentText("This changes the category shown for every transaction currently using "
+                + source.name() + ".");
+        confirmation.showAndWait().filter(button -> button == ButtonType.OK).ifPresent(button -> {
+            try {
+                int reassigned = service.reassignTransactions(source.id(), target.id());
+                showValidation(reassigned + " " + (reassigned == 1 ? "transaction was" : "transactions were")
+                        + " reassigned to " + target.name() + ".");
+            } catch (RuntimeException exception) {
+                showValidation(messageFor(exception));
+            }
+        });
+    }
+
+    /** Confirms and permanently deletes an unused ordinary category. */
+    private void deleteCategory(Category category) {
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Delete category");
+        confirmation.setHeaderText("Permanently delete " + category.name() + "?");
+        confirmation.setContentText("This cannot be undone. Categories used by transactions must be reassigned first.");
+        confirmation.showAndWait().filter(button -> button == ButtonType.OK).ifPresent(button -> {
+            try {
+                service.deleteCategory(category.id());
+                renderCategories();
+                showValidation(category.name() + " was deleted.");
+            } catch (RuntimeException exception) {
+                showValidation(messageFor(exception));
+            }
+        });
     }
 
     private void showValidation(String message) {

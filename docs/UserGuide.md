@@ -39,9 +39,9 @@ Use the navigation controls on the left to open an area:
   budget status.
 - **Transactions** — records and displays real Income and Expense
   transactions.
-- **Categories and Budgets** — creates, renames, archives, restores, and
-  displays custom Income and Expense categories. Monthly budgets are not
-  available yet.
+- **Categories and Budgets** — creates, renames, archives, restores,
+  reassigns, and deletes custom Income and Expense categories. Monthly budgets
+  are not available yet.
 - **Data and Settings** — placeholder for backup and data-management tools.
 
 Click a navigation control, or press Tab until it has focus. On macOS, activate
@@ -154,27 +154,43 @@ The current-category list scrolls vertically when it is taller than the
 window, so every saved category remains reachable without changing the window
 layout.
 
-## Rename, archive, or restore a category
+## Manage, reassign, or delete a category
 
-Open **Categories and Budgets** to manage an ordinary category. Select
-**Rename**, enter a new name, and confirm the standard dialog. Names are
-trimmed, must contain 1 to 40 characters, and must be unique without regard to
-letter case within the category type. Select **Archive** and confirm when you
-want to stop using a category for new transactions. It remains attached to its
-historical transactions, is absent from the new-transaction category selector,
-and remains available when filtering transaction history.
+Open **Categories and Budgets** and select **Manage** beside an ordinary
+category. Choose **Rename**, enter a new name, and confirm the standard dialog.
+Names are trimmed, must contain 1 to 40 characters, and must be unique without
+regard to letter case within the category type. Choose **Archive** and confirm
+when you want to stop using a category for new transactions. It remains attached
+to its historical transactions, is absent from the new-transaction category
+selector, and remains available when filtering transaction history.
 
 The normal category view shows active categories and the creation form. Select
 **View archived categories** to open the separate archived-category view. It
-does not show the creation form. Select **Restore** beside an archived category
-to return it to active use and the matching new-transaction selector. If an
-active category of the same type already uses the same name, rename the
+does not show the creation form. Select **Manage**, then **Restore**, to return
+an archived category to active use and the matching new-transaction selector.
+If an active category of the same type already uses the same name, rename the
 archived category first, then restore it.
 
-The two `Uncategorised` fallback categories cannot be renamed, archived, or
-restored. Category lifecycle actions provide visible feedback when an operation
-is invalid. All changes are saved automatically and remain after restarting
-MoneyMap.
+Each category row has one labelled **Manage** control, keeping the list compact
+when you have many categories. Select it to reveal only the actions that make
+sense for that category. An unused ordinary category offers **Rename**,
+**Archive** or **Restore**, and **Delete**. A used ordinary category also offers
+**Reassign**, while **Delete** is disabled with an explanation until all of its
+transactions have been reassigned.
+
+To remove an unused category, select **Manage**, then **Delete**, and confirm.
+This permanently removes the category. To remove a used category, select
+**Manage**, then **Reassign**; choose an active category of the same type
+(including `Uncategorised` if appropriate) and confirm. The affected
+transaction history then shows the replacement category. Select **Manage** and
+**Delete** afterwards if you no longer need the original category.
+
+The two `Uncategorised` fallback categories open an explanation that they are
+permanent rather than showing management actions. They cannot be renamed,
+archived, restored, deleted, or used as the source of reassignment. They remain
+valid reassignment destinations for their matching transaction type. Category
+management actions provide visible feedback when an operation is invalid. All
+changes are saved automatically and remain after restarting MoneyMap.
 
 ## Automatic local persistence
 
@@ -232,7 +248,6 @@ The current build supports recording, reviewing, filtering, and searching
 displayed Income and Expense transactions. It does not yet support:
 
 - editing or deleting transactions;
-- permanently deleting or reassigning categories;
 - budgets or Dashboard calculations;
 - import or export;
 - wallets, transfers, accounts, bank synchronisation, or specialised

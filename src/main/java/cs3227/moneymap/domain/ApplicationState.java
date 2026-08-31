@@ -118,6 +118,45 @@ public record ApplicationState(List<Category> categories, List<Transaction> tran
         return new ApplicationState(updated, replaceCategoryReferences(replacement));
     }
 
+    /** Returns a new state with an unused ordinary category permanently removed.
+     *
+     * @param category category to remove
+     * @return updated immutable state
+     */
+    public ApplicationState withoutCategory(Category category) {
+        Objects.requireNonNull(category, "Category is required");
+        if (category.permanentFallback()) {
+            throw new IllegalArgumentException("Permanent fallback categories cannot be deleted.");
+        }
+        if (transactions.stream().anyMatch(transaction -> transaction.category().id().equals(category.id()))) {
+            throw new IllegalArgumentException("A used category cannot be deleted.");
+        }
+        List<Category> updated = categories.stream()
+                .filter(candidate -> !candidate.id().equals(category.id()))
+                .toList();
+        if (updated.size() == categories.size()) {
+            throw new IllegalArgumentException("Category does not exist.");
+        }
+        return new ApplicationState(updated, transactions);
+    }
+
+    /** Returns a new state with every source-category transaction moved to the target category.
+     *
+     * @param source category currently referenced by transactions
+     * @param target replacement category with the same transaction type
+     * @return updated immutable state
+     */
+    public ApplicationState withReassignedTransactions(Category source, Category target) {
+        Objects.requireNonNull(source, "Source category is required");
+        Objects.requireNonNull(target, "Target category is required");
+        return new ApplicationState(categories, transactions.stream()
+                .map(transaction -> transaction.category().id().equals(source.id())
+                        ? new Transaction(transaction.id(), transaction.type(), transaction.amount(),
+                                transaction.date(), target, transaction.note())
+                        : transaction)
+                .toList());
+    }
+
     private List<Transaction> replaceCategoryReferences(Category replacement) {
         return transactions.stream()
                 .map(transaction -> transaction.category().id().equals(replacement.id())

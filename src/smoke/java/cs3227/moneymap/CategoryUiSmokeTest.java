@@ -10,13 +10,16 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -102,11 +105,49 @@ public class CategoryUiSmokeTest extends Application {
                     .map(node -> ((Label) node).getText())
                     .anyMatch(text -> text.equals("Archived investments · Expense")),
                     "Archived category was not shown in the archived view");
-            requireNode(lifecycleView, "restoreCategoryButton", Button.class).fire();
+            chooseManagementAction("Restore");
+            requireButtonNamed(categoryRow(lifecycleView, "Archived investments · Expense"), "Manage").fire();
             require(service.categoriesFor(TransactionType.EXPENSE).stream()
                     .anyMatch(category -> category.name().equals("Archived investments")),
-                    "Restored category was not returned to active selection");
+                    "Manage dialog did not restore the archived category");
             requireNode(lifecycleView, "activeCategoriesButton", Button.class).fire();
+
+            Category used = service.createCategory(TransactionType.EXPENSE, "Temporary");
+            service.createTransaction(TransactionType.EXPENSE, "5.00", service.defaultDate(), used.id(), "Test");
+            Parent deletionView = loadView(service);
+            stage.setScene(new Scene(deletionView, 700, 600));
+            stage.show();
+            HBox usedRow = categoryRow(deletionView, "Temporary · Expense");
+            require(requireButtonNamed(usedRow, "Manage") != null,
+                    "Manage control was not shown for ordinary category");
+            require(buttonNamed(usedRow, "Delete") == null, "Delete was not progressively disclosed");
+            require(buttonNamed(usedRow, "Reassign") == null, "Reassign was not progressively disclosed");
+            Category fallback = service.categoriesFor(TransactionType.EXPENSE).stream()
+                    .filter(Category::permanentFallback).findFirst().orElseThrow();
+            HBox fallbackRow = categoryRow(deletionView, fallback.name() + " · Expense");
+            inspectFallbackManagementThenClose();
+            requireButtonNamed(fallbackRow, "Manage").fire();
+            inspectUsedManagementThenCancel();
+            requireButtonNamed(usedRow, "Manage").fire();
+            chooseManagementActionThenChooseAndConfirm("Reassign");
+            requireButtonNamed(usedRow, "Manage").fire();
+            require(service.transactions().stream()
+                            .noneMatch(transaction -> transaction.category().id().equals(used.id())),
+                    "Manage dialog did not reassign the used category's transaction");
+            chooseManagementActionAndAcceptConfirmation("Delete");
+            requireButtonNamed(usedRow, "Manage").fire();
+            require(service.allCategories().stream().noneMatch(category -> category.id().equals(used.id())),
+                    "Manage dialog did not delete the reassigned category");
+
+            Category blocked = service.createCategory(TransactionType.EXPENSE, "Still used");
+            service.createTransaction(TransactionType.EXPENSE, "7.00", service.defaultDate(), blocked.id(), "Blocked");
+            Parent blockedDeletionView = loadView(service);
+            stage.setScene(new Scene(blockedDeletionView, 700, 600));
+            stage.show();
+            inspectUsedManagementThenCancel();
+            requireButtonNamed(categoryRow(blockedDeletionView, "Still used · Expense"), "Manage").fire();
+            require(service.allCategories().stream().anyMatch(category -> category.id().equals(blocked.id())),
+                    "Used category was deletable through its management dialog");
 
             Parent transactionView = loadTransactionView(service);
             stage.setScene(new Scene(transactionView, 900, 700));
@@ -177,6 +218,104 @@ public class CategoryUiSmokeTest extends Application {
         Object node = parent.lookup("#" + id);
         require(type.isInstance(node), "Missing or incorrect control: " + id);
         return type.cast(node);
+    }
+
+    private static HBox categoryRow(Parent parent, String categoryText) {
+        return requireNode(parent, "categoryRows", VBox.class).getChildren().stream()
+                .map(HBox.class::cast)
+                .filter(row -> ((Label) row.getChildren().getFirst()).getText().equals(categoryText))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Category row was not shown: " + categoryText));
+    }
+
+    private static Button buttonNamed(HBox row, String text) {
+        return row.getChildren().stream()
+                .filter(Button.class::isInstance)
+                .map(Button.class::cast)
+                .filter(button -> button.getText().equals(text))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static Button requireButtonNamed(HBox row, String text) {
+        Button button = buttonNamed(row, text);
+        require(button != null, "Missing category row button: " + text);
+        return button;
+    }
+
+    /** Schedules a click on the requested action in the next management dialog. */
+    private static void chooseManagementAction(String action) {
+        Platform.runLater(() -> buttonInOpenDialog(action).fire());
+    }
+
+    /** Selects a management action and accepts the confirmation dialog it opens. */
+    private static void chooseManagementActionAndAcceptConfirmation(String action) {
+        Platform.runLater(() -> {
+            buttonInOpenDialog(action).fire();
+            Platform.runLater(CategoryUiSmokeTest::acceptOpenDialog);
+        });
+    }
+
+    /** Selects reassignment, accepts its target choice, then accepts its confirmation. */
+    private static void chooseManagementActionThenChooseAndConfirm(String action) {
+        Platform.runLater(() -> {
+            buttonInOpenDialog(action).fire();
+            Platform.runLater(() -> {
+                acceptOpenDialog();
+                Platform.runLater(CategoryUiSmokeTest::acceptOpenDialog);
+            });
+        });
+    }
+
+    /** Checks the used-category explanation and disabled Delete action before cancelling. */
+    private static void inspectUsedManagementThenCancel() {
+        Platform.runLater(() -> {
+            DialogPane dialogPane = openDialogPane();
+            require(dialogPane.getContentText().contains("Reassign them before deleting."),
+                    "Used category management dialog did not explain reassignment");
+            require(buttonInOpenDialog("Delete").isDisable(),
+                    "Used category management dialog enabled deletion");
+            ((Button) dialogPane.lookupButton(ButtonType.CANCEL)).fire();
+        });
+    }
+
+    /** Checks the protected fallback explanation before closing the management dialog. */
+    private static void inspectFallbackManagementThenClose() {
+        Platform.runLater(() -> {
+            DialogPane dialogPane = openDialogPane();
+            require(dialogPane.getContentText().contains("permanent fallback"),
+                    "Fallback management dialog did not explain its protected state");
+            ((Button) dialogPane.lookupButton(ButtonType.CLOSE)).fire();
+        });
+    }
+
+    /** Accepts the currently shown JavaFX dialog on the next event-loop turn. */
+    private static void acceptOpenDialog() {
+        ((Button) openDialogPane().lookupButton(ButtonType.OK)).fire();
+    }
+
+    /** Finds a button with the requested visible label in the currently open dialog. */
+    private static Button buttonInOpenDialog(String text) {
+        DialogPane dialogPane = openDialogPane();
+        return dialogPane.getButtonTypes().stream()
+                .filter(buttonType -> buttonType.getText().equals(text))
+                .map(dialogPane::lookupButton)
+                .map(Button.class::cast)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Missing dialog action: " + text));
+    }
+
+    /** Returns the currently shown JavaFX dialog pane. */
+    private static DialogPane openDialogPane() {
+        return Window.getWindows().stream()
+                .filter(Window::isShowing)
+                .map(Window::getScene)
+                .filter(java.util.Objects::nonNull)
+                .map(scene -> scene.lookup(".dialog-pane"))
+                .filter(DialogPane.class::isInstance)
+                .map(DialogPane.class::cast)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Expected confirmation dialog was not shown"));
     }
 
     private static void require(boolean condition, String message) {

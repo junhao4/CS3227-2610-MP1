@@ -164,6 +164,48 @@ public final class TransactionService {
         return categoryIn(candidate, category.id());
     }
 
+    /** Permanently deletes an ordinary category that no transaction still references.
+     *
+     * @param categoryId category identity to delete
+     */
+    public void deleteCategory(UUID categoryId) {
+        Category category = requireOrdinaryCategory(categoryId);
+        int transactionCount = transactionsUsing(category);
+        if (transactionCount > 0) {
+            throw new IllegalArgumentException("Category is used by " + transactionCount + " "
+                    + (transactionCount == 1 ? "transaction" : "transactions")
+                    + ". Reassign its transactions before deleting it.");
+        }
+        ApplicationState candidate = state.withoutCategory(category);
+        persist(candidate);
+        state = candidate;
+    }
+
+    /** Reassigns every transaction from one ordinary category to an active compatible category.
+     *
+     * @param sourceCategoryId category currently assigned to transactions
+     * @param targetCategoryId active category that will replace the source
+     * @return number of reassigned transactions
+     */
+    public int reassignTransactions(UUID sourceCategoryId, UUID targetCategoryId) {
+        Category source = requireOrdinaryCategory(sourceCategoryId);
+        Category target = requireActiveCategory(targetCategoryId);
+        if (source.id().equals(target.id())) {
+            throw new IllegalArgumentException("Choose a different category for reassignment.");
+        }
+        if (source.type() != target.type()) {
+            throw new IllegalArgumentException("Reassignment requires categories of the same type.");
+        }
+        int transactionCount = transactionsUsing(source);
+        if (transactionCount == 0) {
+            throw new IllegalArgumentException("Category has no transactions to reassign.");
+        }
+        ApplicationState candidate = state.withReassignedTransactions(source, target);
+        persist(candidate);
+        state = candidate;
+        return transactionCount;
+    }
+
     /**
      * Supplies the current transaction history.
      *
@@ -256,6 +298,26 @@ public final class TransactionService {
             throw new IllegalArgumentException("Uncategorised categories cannot be changed.");
         }
         return category;
+    }
+
+    /** Finds a category that can receive reassigned transactions. */
+    private Category requireActiveCategory(UUID categoryId) {
+        Objects.requireNonNull(categoryId, "Replacement category is required.");
+        Category category = state.categories().stream()
+                .filter(candidate -> candidate.id().equals(categoryId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Selected category does not exist."));
+        if (category.archived()) {
+            throw new IllegalArgumentException("Archived categories cannot receive reassigned transactions.");
+        }
+        return category;
+    }
+
+    /** Counts the transactions currently assigned to a category. */
+    private int transactionsUsing(Category category) {
+        return (int) state.transactions().stream()
+                .filter(transaction -> transaction.category().id().equals(category.id()))
+                .count();
     }
 
     private static Category categoryIn(ApplicationState candidate, UUID categoryId) {

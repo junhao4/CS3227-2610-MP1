@@ -97,6 +97,28 @@ class JsonDataRepositoryTest {
     }
 
     @Test
+    void saveThenLoad_preservesReassignedTransactionsAfterSourceCategoryDeletion() throws IOException {
+        JsonDataRepository repository = new JsonDataRepository(applicationDirectory);
+        ApplicationState initial = ApplicationState.withStarterCategories();
+        Category food = initial.categories().stream()
+                .filter(category -> category.name().equals("Food")).findFirst().orElseThrow();
+        Category transport = initial.categories().stream()
+                .filter(category -> category.name().equals("Transport")).findFirst().orElseThrow();
+        Transaction transaction = new Transaction(
+                UUID.fromString("20000000-0000-0000-0000-000000000003"), TransactionType.EXPENSE,
+                MoneyAmount.parse("8.50"), LocalDate.of(2026, 8, 30), food, "Lunch");
+        ApplicationState reassigned = initial.withTransaction(transaction).withReassignedTransactions(food, transport);
+        ApplicationState saved = reassigned.withoutCategory(food);
+
+        repository.save(saved);
+
+        ApplicationState loaded = repository.load().state();
+        assertEquals(saved, loaded);
+        assertEquals(transport.id(), loaded.transactions().getFirst().category().id());
+        assertTrue(loaded.categories().stream().noneMatch(category -> category.id().equals(food.id())));
+    }
+
+    @Test
     void load_malformedJson_preservesCorruptFileAndReturnsSafeSeededState() throws IOException {
         JsonDataRepository repository = new JsonDataRepository(applicationDirectory);
         Files.createDirectories(repository.dataFile().getParent());

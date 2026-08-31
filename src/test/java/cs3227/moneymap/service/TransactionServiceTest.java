@@ -171,6 +171,66 @@ class TransactionServiceTest {
     }
 
     @Test
+    void deleteCategory_removesUnusedOrdinaryCategoryAndPersists() throws IOException {
+        Category temporary = service.createCategory(TransactionType.EXPENSE, "Temporary");
+
+        service.deleteCategory(temporary.id());
+
+        assertTrue(service.allCategories().stream().noneMatch(category -> category.id().equals(temporary.id())));
+        assertTrue(repository.savedState.categories().stream()
+                .noneMatch(category -> category.id().equals(temporary.id())));
+    }
+
+    @Test
+    void deleteCategory_rejectsUsedAndFallbackCategoriesWithoutSaving() throws IOException {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        Category fallback = categoryNamed("Uncategorised", TransactionType.EXPENSE);
+        service.createTransaction(TransactionType.EXPENSE, "8.50", TODAY, food.id(), "Lunch");
+        int savesBeforeDeletion = repository.saveCount;
+
+        IllegalArgumentException used = assertThrows(IllegalArgumentException.class,
+                () -> service.deleteCategory(food.id()));
+        assertEquals("Category is used by 1 transaction. Reassign its transactions before deleting it.",
+                used.getMessage());
+        assertThrows(IllegalArgumentException.class, () -> service.deleteCategory(fallback.id()));
+        assertEquals(savesBeforeDeletion, repository.saveCount);
+        assertEquals(food, service.transactions().get(0).category());
+    }
+
+    @Test
+    void reassignTransactions_updatesReferencesThenAllowsDeletionAndPersists() throws IOException {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        Category transport = categoryNamed("Transport", TransactionType.EXPENSE);
+        service.createTransaction(TransactionType.EXPENSE, "8.50", TODAY, food.id(), "Lunch");
+
+        int reassigned = service.reassignTransactions(food.id(), transport.id());
+        service.deleteCategory(food.id());
+
+        assertEquals(1, reassigned);
+        assertEquals(transport, service.transactions().get(0).category());
+        assertTrue(service.allCategories().stream().noneMatch(category -> category.id().equals(food.id())));
+        assertEquals(3, repository.saveCount);
+    }
+
+    @Test
+    void reassignTransactions_rejectsInvalidSourceOrTargetWithoutSaving() throws IOException {
+        Category food = categoryNamed("Food", TransactionType.EXPENSE);
+        Category transport = categoryNamed("Transport", TransactionType.EXPENSE);
+        Category salary = categoryNamed("Salary", TransactionType.INCOME);
+        Category fallback = categoryNamed("Uncategorised", TransactionType.EXPENSE);
+        service.createTransaction(TransactionType.EXPENSE, "8.50", TODAY, food.id(), "Lunch");
+        service.archiveCategory(transport.id());
+        int savesBeforeReassignment = repository.saveCount;
+
+        assertThrows(IllegalArgumentException.class, () -> service.reassignTransactions(food.id(), food.id()));
+        assertThrows(IllegalArgumentException.class, () -> service.reassignTransactions(food.id(), salary.id()));
+        assertThrows(IllegalArgumentException.class, () -> service.reassignTransactions(food.id(), transport.id()));
+        assertThrows(IllegalArgumentException.class, () -> service.reassignTransactions(fallback.id(), food.id()));
+        assertEquals(savesBeforeReassignment, repository.saveCount);
+        assertEquals(food, service.transactions().get(0).category());
+    }
+
+    @Test
     void createTransaction_validIncome_persistsAndPublishesTransaction() throws IOException {
         Category salary = categoryNamed("Salary", TransactionType.INCOME);
 

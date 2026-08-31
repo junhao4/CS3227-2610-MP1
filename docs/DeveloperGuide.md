@@ -29,12 +29,14 @@ executables:
   data directory and verifies custom category creation, normalization,
   duplicate validation, type scoping, visible feedback, the configured vertical
   scroll container, active/archived-view switching, rename/archive/restore
-  controls, archived-category filtering, and reload.
+  management-dialog progressive disclosure, reassignment/deletion confirmation
+  flows, fallback protection,
+  blocked-deletion feedback, archived-category filtering, and reload.
 
 `verifyPrototypes` separately verifies that all eight exploratory prototype
 FXML resources still load. It does not test production behavior.
 
-The current JUnit suite contains 56 tests covering the domain, validation,
+The current JUnit suite contains 49 tests covering the domain, validation,
 service, path-resolution, and JSON-persistence rules. Useful focused commands
 are:
 
@@ -110,7 +112,7 @@ and persistence responsibilities:
 | Area | Main responsibilities |
 | --- | --- |
 | JavaFX presentation | `MoneyMapApp` assembles dependencies and creates the stage. `ApplicationController` owns shell navigation. `TransactionController` and `CategoryController` connect the transaction and custom-category workflows to their FXML views. `SgdFormatter` formats display values. |
-| Application/service | `TransactionService` loads state, supplies type-compatible categories, validates and creates custom categories, resolves fallback categories, creates transactions, and exposes non-mutating transaction-history queries. `DataRepository` is its persistence boundary. |
+| Application/service | `TransactionService` loads state, supplies type-compatible categories, validates and creates custom categories, resolves fallback categories, creates transactions, safely reassigns or deletes categories, and exposes non-mutating transaction-history queries. `DataRepository` is its persistence boundary. |
 | Domain | `Transaction`, `TransactionType`, `MoneyAmount`, `Category`, `StarterCategoryCatalog`, and `ApplicationState` hold immutable data and enforce core invariants. |
 | Persistence | `ApplicationDirectoryResolver` chooses a stable application base. `JsonDataRepository` maps state to versioned JSON and performs load, validation, atomic replacement, and corrupt-file recovery. |
 
@@ -181,16 +183,23 @@ compatible transaction selector without a second category-management store.
 
 `CategoryController` defaults to an active-category view with the creation
 form. A labelled control reveals the archived-category view, which hides the
-creation form and provides Restore actions. Rename uses a standard text-input
-dialog; Archive uses a standard confirmation dialog. The service rejects
-permanent fallbacks, validates names and type-scoped duplicates, and saves a
-candidate state before publishing it. Restore also rejects a case-insensitive
-name clash with an active category of the same type, directing the user to
-rename the archived category first. `ApplicationState` rebuilds transaction
-category references by stable category ID when a category changes, preserving
-historical meaning while allowing `categoriesFor` to exclude archived categories
-from new transaction selection. History filters use `allCategories`, so
-archived categories remain discoverable there.
+creation form. Each category row exposes only one **Manage** button; its dialog
+progressively discloses valid lifecycle actions according to the category's
+state. Ordinary categories offer Rename and Archive or Restore. Used ordinary
+categories offer Reassign and show a disabled Delete action with the required
+reassignment explanation; unused ordinary categories offer Delete. Permanent
+fallbacks instead show their protected-state explanation. Rename uses a
+standard text-input dialog; Archive, Reassign, and Delete use confirmation
+dialogs. Reassignment first restricts choices to active categories of the same
+type, then changes all transactions referring to the source category in one
+candidate state. The service validates these rules and saves a candidate state
+before publishing it. Restore also rejects a case-insensitive name clash with
+an active category of the same type, directing the user to rename the archived
+category first. `ApplicationState` rebuilds transaction category references by
+stable category ID when a category changes or is reassigned, and refuses a
+deletion that would leave a dangling reference. `categoriesFor` excludes
+archived categories from new transaction selection. History filters use
+`allCategories`, so archived categories remain discoverable there.
 
 ## Domain and validation decisions
 
@@ -261,7 +270,7 @@ investigation or a later recovery feature.
 
 ## Testing strategy and evidence
 
-The 62 JUnit tests use specification-based equivalence partitions and boundary
+The 49 JUnit tests use specification-based equivalence partitions and boundary
 values:
 
 - amount tests cover zero, positive values, scales zero through two, whitespace,
@@ -372,21 +381,41 @@ Use a disposable directory so the test cannot alter personal data.
 
 ### Rename, archive, and restore categories
 
-1. Create an ordinary category in **Categories and Budgets**, then select
-   **Rename** and confirm a valid new name in the standard dialog.
+1. Create an ordinary category in **Categories and Budgets**, select
+   **Manage**, then **Rename**, and confirm a valid new name in the standard
+   dialog.
 2. Record a transaction using the renamed category and confirm the category
    name appears in transaction history.
-3. Select **Archive**, confirm the standard confirmation dialog, then verify the
-   category is absent from the active view and new-transaction selector.
+3. Select **Manage**, then **Archive**. Confirm the standard confirmation
+   dialog, then verify the category is absent from the active view and
+   new-transaction selector.
 4. Select **View archived categories**, verify the creation form is hidden, and
-   confirm the category appears with a **Restore** action.
-5. Select **Restore** and verify the category returns to the active view and
-   matching new-transaction selector. Create a same-type active category with
-   the archived name and confirm restore requires the archived category to be
-   renamed first.
-6. Verify both `Uncategorised` fallbacks have disabled lifecycle controls and
+   confirm the category appears with a **Manage** action.
+5. Select **Manage**, then **Restore**, and verify the category returns to the
+   active view and matching new-transaction selector. Create a same-type active
+   category with the archived name and confirm restore requires the archived
+   category to be renamed first.
+6. Verify both `Uncategorised` fallbacks show a protected-state explanation and
    remain unchanged.
 7. Restart the application and verify the restored category remains active.
+
+### Reassign and delete categories
+
+1. Create an ordinary Expense category, record a transaction with it, and then
+   select **Manage**. Verify **Delete** is disabled and the dialog says the
+   transactions must be reassigned first.
+2. Select **Reassign**, choose a different active Expense category, and confirm
+   the selection and confirmation dialogs. Verify the transaction history now
+   shows the chosen replacement category.
+3. Select **Manage** again, then select **Delete** for the now-unused source
+   category and confirm. Verify it is removed from the category list,
+   new-transaction selector, and history filter while the transaction remains
+   valid under its replacement category.
+4. Verify that **Manage** shows `Uncategorised` as protected rather than
+   offering changes. Confirm it can be selected only as a destination for the
+   matching Income or Expense type.
+5. Restart the application and confirm the deletion and reassigned transaction
+   category remain saved.
 
 ### Restart persistence
 
