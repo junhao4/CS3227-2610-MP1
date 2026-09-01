@@ -32,7 +32,7 @@ public record Transaction(UUID id, TransactionType type, MoneyAmount amount,
             throw new IllegalArgumentException("Note must contain at most 200 characters.");
         }
         if (amount.value().compareTo(MAX_AMOUNT) > 0) {
-            throw new IllegalArgumentException("Amount must be between S$0.00 and S$9,999,999.99.");
+            throw new IllegalArgumentException("Amount must be between $0.00 and $9,999,999.99.");
         }
         if (category.type() != type) {
             throw new IllegalArgumentException("Category must match the transaction type.");

@@ -603,8 +603,7 @@ public final class CategoryController {
 
     /** Uses the compact dollar notation reserved for the prototype-style cards. */
     private static String cardMoney(cs3227.moneymap.domain.MoneyAmount amount) {
-        String formatted = SgdFormatter.format(amount);
-        return formatted.startsWith("S$") ? "$" + formatted.substring(2) : formatted;
+        return SgdFormatter.format(amount);
     }
 
     /** Selects the prototype progress colour thresholds for a category month. */

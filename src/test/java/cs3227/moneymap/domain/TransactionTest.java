@@ -54,9 +54,10 @@ class TransactionTest {
 
     @Test
     void constructor_amountAboveMaximumTransactionValue_rejected() {
-        assertThrows(IllegalArgumentException.class, () -> new Transaction(
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new Transaction(
                 UUID.randomUUID(), TransactionType.EXPENSE, MoneyAmount.parse("10000000"),
                 LocalDate.now(), FOOD, "Too large"));
+        assertEquals("Amount must be between $0.00 and $9,999,999.99.", exception.getMessage());
     }
 
     @Test
