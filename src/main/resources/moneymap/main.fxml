@@ -5,7 +5,7 @@
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.VBox?>
-<BorderPane fx:id="shell" xmlns="http://javafx.com/javafx/17.0.7" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs3227.moneymap.ApplicationController" styleClass="app-shell">
+<BorderPane fx:id="shell" xmlns="http://javafx.com/javafx/17.0.7" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs3227.moneymap.ui.ApplicationController" styleClass="app-shell">
     <left>
         <VBox prefWidth="245" spacing="8" styleClass="sidebar" BorderPane.alignment="CENTER">
             <padding><Insets top="28" right="18" bottom="24" left="18" /></padding>

@@ -1,4 +1,4 @@
-package cs3227.moneymap;
+package cs3227.moneymap.ui;
 
 import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogPane;
@@ -7,7 +7,7 @@ import java.net.URL;
 import java.util.Objects;
 
 /** Applies the shared MoneyMap presentation to application-owned JavaFX dialogs. */
-final class DialogStyler {
+public final class DialogStyler {
     private static final String STYLESHEET = stylesheetUrl().toExternalForm();
     private static final String DIALOG_STYLE_CLASS = "moneymap-dialog";
     private static final String DANGER_STYLE_CLASS = "danger-dialog";
@@ -15,8 +15,11 @@ final class DialogStyler {
     private DialogStyler() {
     }
 
-    /** Attaches the production stylesheet and base dialog class. */
-    static void apply(Dialog<?> dialog) {
+    /** Attaches the production stylesheet and base dialog class.
+     *
+     * @param dialog application-owned dialog to style
+     */
+    public static void apply(Dialog<?> dialog) {
         DialogPane dialogPane = Objects.requireNonNull(dialog).getDialogPane();
         if (!dialogPane.getStylesheets().contains(STYLESHEET)) {
             dialogPane.getStylesheets().add(STYLESHEET);
@@ -26,8 +29,11 @@ final class DialogStyler {
         }
     }
 
-    /** Applies the base theme and marks an irreversible confirmation as destructive. */
-    static void applyDanger(Dialog<?> dialog) {
+    /** Applies the base theme and marks an irreversible confirmation as destructive.
+     *
+     * @param dialog irreversible application-owned dialog to style
+     */
+    public static void applyDanger(Dialog<?> dialog) {
         apply(dialog);
         if (!dialog.getDialogPane().getStyleClass().contains(DANGER_STYLE_CLASS)) {
             dialog.getDialogPane().getStyleClass().add(DANGER_STYLE_CLASS);

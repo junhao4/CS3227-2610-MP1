@@ -13,7 +13,7 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<ScrollPane fx:id="transactionsScrollPane" id="transactionsView" fitToWidth="true" hbarPolicy="NEVER" xmlns="http://javafx.com/javafx/17.0.7" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs3227.moneymap.TransactionController">
+<ScrollPane fx:id="transactionsScrollPane" id="transactionsView" fitToWidth="true" hbarPolicy="NEVER" xmlns="http://javafx.com/javafx/17.0.7" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs3227.moneymap.ui.TransactionController">
     <content>
         <VBox spacing="20" styleClass="page">
             <padding><Insets top="34" right="42" bottom="34" left="42" /></padding>

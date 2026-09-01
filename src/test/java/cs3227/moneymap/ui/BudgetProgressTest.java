@@ -1,4 +1,4 @@
-package cs3227.moneymap;
+package cs3227.moneymap.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

@@ -97,35 +97,35 @@ tasks.register('verifyDashboardUi', JavaExec) {
     group = 'verification'
     description = 'Verifies Dashboard summaries, budget states, month refresh, and layout safeguards.'
     classpath = sourceSets.smoke.runtimeClasspath
-    mainClass = 'cs3227.moneymap.DashboardUiSmokeTest'
+    mainClass = 'cs3227.moneymap.ui.DashboardUiSmokeTest'
 }
 
 tasks.register('verifyTransactionUi', JavaExec) {
     group = 'verification'
     description = 'Verifies transaction creation, validation, fallback assignment, and reload in JavaFX.'
     classpath = sourceSets.smoke.runtimeClasspath
-    mainClass = 'cs3227.moneymap.TransactionUiSmokeTest'
+    mainClass = 'cs3227.moneymap.ui.TransactionUiSmokeTest'
 }
 
 tasks.register('verifyCategoryUi', JavaExec) {
     group = 'verification'
     description = 'Verifies custom category creation, validation, type scoping, and reload in JavaFX.'
     classpath = sourceSets.smoke.runtimeClasspath
-    mainClass = 'cs3227.moneymap.CategoryUiSmokeTest'
+    mainClass = 'cs3227.moneymap.ui.CategoryUiSmokeTest'
 }
 
 tasks.register('verifyDataAndSettingsUi', JavaExec) {
     group = 'verification'
     description = 'Verifies Data and Settings backup export and user feedback in JavaFX.'
     classpath = sourceSets.smoke.runtimeClasspath
-    mainClass = 'cs3227.moneymap.DataAndSettingsUiSmokeTest'
+    mainClass = 'cs3227.moneymap.ui.DataAndSettingsUiSmokeTest'
 }
 
 tasks.register('verifyRecoveryUi', JavaExec) {
     group = 'verification'
     description = 'Verifies malformed-local-data recovery and subsequent backup import.'
     classpath = sourceSets.smoke.runtimeClasspath
-    mainClass = 'cs3227.moneymap.RecoveryUiSmokeTest'
+    mainClass = 'cs3227.moneymap.ui.RecoveryUiSmokeTest'
 }
 
 tasks.named('check') {

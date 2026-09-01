@@ -8,7 +8,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.VBox?>
-<ScrollPane fx:id="categoryScrollPane" id="categoriesAndBudgetsView" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" xmlns="http://javafx.com/javafx/17.0.0" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs3227.moneymap.CategoryController">
+<ScrollPane fx:id="categoryScrollPane" id="categoriesAndBudgetsView" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" xmlns="http://javafx.com/javafx/17.0.0" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs3227.moneymap.ui.CategoryController">
     <content>
         <VBox spacing="14" styleClass="page">
             <padding><Insets top="42" right="48" bottom="42" left="48" /></padding>

@@ -3,6 +3,8 @@ package cs3227.moneymap;
 import cs3227.moneymap.persistence.ApplicationDirectoryResolver;
 import cs3227.moneymap.persistence.JsonDataRepository;
 import cs3227.moneymap.service.TransactionService;
+import cs3227.moneymap.ui.ApplicationController;
+import cs3227.moneymap.ui.DialogStyler;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;

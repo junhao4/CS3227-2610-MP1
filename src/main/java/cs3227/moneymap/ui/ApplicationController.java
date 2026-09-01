@@ -1,4 +1,4 @@
-package cs3227.moneymap;
+package cs3227.moneymap.ui;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -17,7 +17,11 @@ public class ApplicationController {
     @FXML
     private BorderPane shell;
 
-    ApplicationController(TransactionService transactionService) {
+    /** Creates the shell controller with the service shared by every destination view.
+     *
+     * @param transactionService application service used by shell destinations
+     */
+    public ApplicationController(TransactionService transactionService) {
         this.transactionService = Objects.requireNonNull(transactionService);
     }
 

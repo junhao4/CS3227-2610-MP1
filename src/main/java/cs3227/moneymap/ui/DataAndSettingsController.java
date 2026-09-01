@@ -1,4 +1,4 @@
-package cs3227.moneymap;
+package cs3227.moneymap.ui;
 
 import cs3227.moneymap.service.PersistenceException;
 import cs3227.moneymap.service.TransactionService;
