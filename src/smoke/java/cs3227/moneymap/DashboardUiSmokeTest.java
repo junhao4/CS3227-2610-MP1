@@ -122,11 +122,8 @@ public class DashboardUiSmokeTest extends Application {
         assertBudgetRow(view, "Bills", "$81.00 / $100.00", "budget-progress-over", "Over budget");
         assertBudgetRow(view, "Entertainment", "$110.00 / $100.00", "budget-progress-over", "Over budget");
         assertBudgetRow(view, "Health", "$0.00 / $0.00", "budget-progress", "Within budget");
-        HBox unbudgeted = budgetRow(view, "Shopping");
-        require(((Label) unbudgeted.getChildren().get(1)).getText().equals("$25.00 spent"),
-                "Unbudgeted spending was not included in the Dashboard");
-        require(((ProgressBar) unbudgeted.getChildren().get(2)).getAccessibleText().contains("No budget"),
-                "Unbudgeted category did not expose its status");
+        require(!hasBudgetRow(view, "Shopping"),
+                "Unbudgeted categories must not appear in the budget-progress list");
     }
 
     private static void assertBudgetRow(Parent view, String category, String amount,
@@ -173,6 +170,7 @@ public class DashboardUiSmokeTest extends Application {
                 "Dashboard did not display a signed negative net balance");
         require(node(view, "recentRows", VBox.class).getChildren().size() == 1,
                 "Dashboard did not refresh recent activity for the earlier month");
+        assertNoBudgetsMessage(view);
     }
 
     private static void assertMonthSwitch(Parent view) {
@@ -194,6 +192,7 @@ public class DashboardUiSmokeTest extends Application {
                 "Budgetless month retained a stale hero progress state");
         require(node(view, "recentRows", VBox.class).getChildren().size() == 1,
                 "Recent activity did not refresh with the selected month");
+        assertNoBudgetsMessage(view);
     }
 
     private static Category category(TransactionService service, TransactionType type, String name) {
@@ -206,6 +205,21 @@ public class DashboardUiSmokeTest extends Application {
         return rows.getChildren().stream().map(HBox.class::cast)
                 .filter(row -> ((Label) row.getChildren().getFirst()).getText().equals(category))
                 .findFirst().orElseThrow();
+    }
+
+    private static boolean hasBudgetRow(Parent view, String category) {
+        VBox rows = node(view, "budgetRows", VBox.class);
+        return rows.getChildren().stream().filter(HBox.class::isInstance).map(HBox.class::cast)
+                .map(row -> (Label) row.getChildren().getFirst())
+                .anyMatch(label -> label.getText().equals(category));
+    }
+
+    private static void assertNoBudgetsMessage(Parent view) {
+        VBox rows = node(view, "budgetRows", VBox.class);
+        require(rows.getChildren().size() == 1 && rows.getChildren().getFirst() instanceof Label,
+                "Budgetless month did not show the empty budget state");
+        require(((Label) rows.getChildren().getFirst()).getText().equals("No budgets are set for this month."),
+                "Budgetless month displayed the wrong budget empty-state message");
     }
 
     private static Label label(Parent view, String id) {

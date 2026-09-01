@@ -102,11 +102,11 @@ public class DashboardController {
     private void refreshBudgets(YearMonth month) {
         budgetRows.getChildren().clear();
         List<Category> categories = service.categoriesFor(TransactionType.EXPENSE).stream()
-                .sorted(Comparator.comparing((Category category) -> service.budgetFor(category.id(), month).isEmpty())
-                        .thenComparing(Category::name))
+                .filter(category -> service.budgetFor(category.id(), month).isPresent())
+                .sorted(Comparator.comparing(Category::name))
                 .toList();
         for (Category category : categories) {
-            Budget budget = service.budgetFor(category.id(), month).orElse(null);
+            Budget budget = service.budgetFor(category.id(), month).orElseThrow();
             BigDecimal spent = service.spendingFor(category.id(), month).value();
             HBox row = new HBox(10);
             row.getStyleClass().add("dashboard-budget-row");
@@ -116,17 +116,16 @@ public class DashboardController {
             name.setPrefWidth(150);
             name.setMaxWidth(180);
             name.setTextOverrun(OverrunStyle.ELLIPSIS);
-            Label amount = new Label(budget == null ? format(spent) + " spent"
-                    : format(spent) + " / " + format(budget.amount().value()));
+            Label amount = new Label(format(spent) + " / " + format(budget.amount().value()));
             amount.getStyleClass().add("dashboard-amount");
             amount.setMinWidth(105);
             amount.setPrefWidth(150);
             amount.setMaxWidth(170);
             amount.setTextOverrun(OverrunStyle.ELLIPSIS);
-            BigDecimal ratio = budget == null || budget.amount().value().signum() == 0 ? BigDecimal.ZERO
+            BigDecimal ratio = budget.amount().value().signum() == 0 ? BigDecimal.ZERO
                     : spent.divide(budget.amount().value(), 4, RoundingMode.HALF_UP);
-            boolean overBudget = budget != null && service.isOverBudget(category.id(), month);
-            String status = budget == null ? "No budget" : BudgetProgress.statusFor(ratio, overBudget);
+            boolean overBudget = service.isOverBudget(category.id(), month);
+            String status = BudgetProgress.statusFor(ratio, overBudget);
             ProgressBar progress = new ProgressBar(ratio.doubleValue());
             progress.getStyleClass().add(BudgetProgress.styleFor(ratio, overBudget));
             progress.setMaxWidth(Double.MAX_VALUE);
@@ -136,7 +135,7 @@ public class DashboardController {
             budgetRows.getChildren().add(row);
         }
         if (budgetRows.getChildren().isEmpty()) {
-            budgetRows.getChildren().add(new Label("No expense categories yet."));
+            budgetRows.getChildren().add(new Label("No budgets are set for this month."));
         }
     }
 
