@@ -1,0 +1,28 @@
+@startuml
+title Save before publish
+hide footbox
+skinparam backgroundColor #FFFFFF
+actor User
+participant "UI controller" as Ui
+participant "TransactionService" as Service
+participant "JsonDataRepository\n(DataRepository)" as Repository
+database "moneymap.json.tmp" as Temporary
+database "moneymap.json" as Main
+
+User -> Ui : save valid change
+Ui -> Service : create/update operation
+Service -> Service : build candidate ApplicationState
+Service -> Repository : save(candidate)
+Repository -> Temporary : write complete JSON
+alt temporary write succeeds
+  Repository -> Main : atomic replace\n(or replacing fallback)
+  Repository --> Service : save succeeds
+  Service -> Service : publish candidate state
+  Service --> Ui : updated result
+  Ui --> User : render updated view
+else temporary write fails
+  Repository --> Service : IOException
+  Service --> Ui : PersistenceException
+  Ui --> User : show feedback; keep form open
+end
+@enduml

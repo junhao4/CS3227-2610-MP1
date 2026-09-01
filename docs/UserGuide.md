@@ -49,6 +49,28 @@ Use the navigation controls on the left to open an area:
 Click a navigation control, or press Tab until it has focus. On macOS, activate
 a focused control with Space. On Windows and Linux, use Enter or Space.
 
+## Use the Dashboard
+
+The Dashboard is a monthly view. Its month selector initially shows the current
+month. Select another available month to refresh the title, spending summary,
+budget rows, Quick totals, and recent activity together.
+
+- The large summary card compares all Expense transactions in the selected
+  month with that month's total planned budget. **Left to spend** is the
+  non-negative difference between them. If no Expense budgets are effective in
+  that month, the card says so instead of presenting a percentage.
+- **Budget vs spending** shows only Expense categories with an effective budget
+  for the selected month. Each row shows the category's spent amount beside its
+  budget and a progress bar: green is up to 50% used, yellow is above 50% up to
+  80%, and red is above 80% or over budget. Expense transactions in categories
+  without a budget still count in Expenses and Net balance, but have no budget
+  row or progress bar.
+- **Quick totals** shows Income, Expenses, the total planned budget, and Net
+  balance for the selected month. Net balance is Income minus Expenses.
+- **Recent activity** lists up to the three most recent transactions in the
+  selected month. It is a summary; use **Transactions** when you need the full
+  history, filters, or editing controls.
+
 ## Record a transaction
 
 1. Open **Transactions**.

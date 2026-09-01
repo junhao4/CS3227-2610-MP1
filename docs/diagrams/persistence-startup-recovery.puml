@@ -1,0 +1,24 @@
+@startuml
+title Startup load and recovery
+hide footbox
+skinparam backgroundColor #FFFFFF
+
+participant "TransactionService" as Service
+participant "JsonDataRepository\n(DataRepository)" as Repository
+database "moneymap.json.tmp" as Temporary
+database "moneymap.json" as Main
+database "moneymap.json.corrupt*" as Corrupt
+
+Service -> Repository : load()
+alt valid main file
+  Repository -> Main : read and validate
+  Repository --> Service : saved ApplicationState
+else no main file; valid temporary file
+  Repository -> Temporary : read and validate
+  Repository -> Main : promote temporary file
+  Repository --> Service : recovered ApplicationState + warning
+else invalid or unsupported available file
+  Repository -> Corrupt : preserve invalid content
+  Repository --> Service : starter state + warning
+end
+@enduml

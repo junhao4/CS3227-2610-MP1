@@ -42,7 +42,7 @@ executables:
   control, complete-state backup round-trip, success feedback, failure
   feedback, and preservation of current local data after a failed export.
 
-`verifyPrototypes` separately verifies that all nine exploratory prototype
+`verifyPrototypes` separately verifies that all ten exploratory prototype
 FXML resources still load. It does not test production behavior.
 
 The current JUnit suite covers the domain, validation,
@@ -122,7 +122,7 @@ and persistence responsibilities:
 
 | Area | Main responsibilities |
 | --- | --- |
-| JavaFX presentation | `MoneyMapApp` assembles dependencies and creates the stage. `ApplicationController` owns shell navigation. `TransactionController`, `CategoryController`, and `DataAndSettingsController` connect their respective FXML workflows to the service. `SgdFormatter` formats display values. |
+| JavaFX presentation | `MoneyMapApp` assembles dependencies and creates the stage. The `ui` package contains `ApplicationController`, the four screen controllers, dialog styling, and display formatting. `ApplicationController` owns shell navigation and supplies each FXML controller with the shared service. |
 | Application/service | `TransactionService` loads state, supplies type-compatible categories, validates and creates or updates transactions and custom categories, resolves fallback categories, safely removes transactions, reassigns or deletes categories, configures monthly expense budgets, calculates category spending and budget state, exposes non-mutating transaction-history queries, and delegates complete-state backup export. `DataRepository` is its persistence boundary. |
 | Domain | `Transaction`, `TransactionType`, `MoneyAmount`, `Category`, `Budget`, `StarterCategoryCatalog`, and `ApplicationState` hold immutable data and enforce core invariants. |
 | Persistence | `ApplicationDirectoryResolver` chooses a stable application base. `JsonDataRepository` maps state to versioned JSON and performs load, validation, atomic replacement, and corrupt-file recovery. |
@@ -132,6 +132,20 @@ implements the service-owned `DataRepository` interface and maps persistence
 DTOs to domain objects. `MoneyMapApp` is the composition root that supplies the
 concrete JSON repository, system clock, and UUID generator. Production code
 does not depend on the prototype source set.
+
+### Logical architecture diagram
+
+The UML component-level diagram shows the logical dependencies. An arrow means
+that the origin depends on the destination; it does not imply a network call.
+The `DataRepository` interface is intentionally owned by the service layer,
+allowing the JSON implementation to remain replaceable.
+
+![UML component diagram of MoneyMap's logical architecture](diagrams/moneymap-architecture.svg)
+
+_Source: [moneymap-architecture.puml](diagrams/moneymap-architecture.puml)._
+
+The diagram shows logical structure only. MoneyMap is a single local desktop
+process; it does not have separate service or database deployments.
 
 Project source sets are:
 
@@ -355,6 +369,19 @@ For each save, the repository:
 3. requests an atomic, replacing move to `moneymap.json`; and
 4. falls back to a replacing move only when the filesystem does not support an
    atomic move.
+
+The following UML sequence diagrams cover a successful save, failed write, and
+startup recovery. They highlight the save-before-publish rule: the
+`TransactionService` exposes a candidate `ApplicationState` only after the
+repository has completed its save.
+
+![UML sequence diagram for saving candidate state before publication](diagrams/persistence-save-recovery.svg)
+
+_Source: [persistence-save-recovery.puml](diagrams/persistence-save-recovery.puml)._
+
+![UML sequence diagram for startup load and recovery](diagrams/persistence-startup-recovery.svg)
+
+_Source: [persistence-startup-recovery.puml](diagrams/persistence-startup-recovery.puml)._
 
 The previous main file is not changed if the temporary write fails. At startup,
 a valid main file always takes precedence over an orphan temporary file; the
@@ -708,6 +735,9 @@ acceptance items; Windows and Linux execution is still unverified.
 - Java naming, layout, and accessibility-oriented labelling decisions were
   checked against the
   [SE-EDU Java coding standard](https://se-education.org/guides/conventions/java/).
+- The Developer Guide's UML diagram notation and version-controlled PlantUML
+  source layout follow the
+  [SE-EDU PlantUML guide](https://se-education.org/guides/tutorials/plantUml.html).
 - The list-first Transactions visual hierarchy and styling reuse decisions from
   the project's own
   [MoneyMap product specification](../specs/ProductSpecification.md) and

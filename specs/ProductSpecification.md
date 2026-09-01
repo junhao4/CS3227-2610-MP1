@@ -1,6 +1,6 @@
 # Product Specification: MoneyMap
 
-Status: Draft
+Status: Current implementation (verified)
 
 ## Problem Statement
 
@@ -82,31 +82,32 @@ All monetary values use Singapore dollars (SGD). The preferred display format is
 
 ### Budget management
 
-31. As a student, I want to set a monthly budget for an expense category so that I can control spending in that category.
-32. As a student, I want budgets to use fixed calendar months so that budget periods are predictable and easy to understand.
-33. As a student, I want to see a compact budget-progress summary for each budgeted expense category.
-34. As a student, I want to continue recording expenses after exceeding a budget so that the application records what actually happened instead of blocking transactions.
-35. As a student, I want over-budget categories to be visibly marked so that I can notice overspending quickly.
-36. As a student, I want expenses in categories without an explicit budget to be handled consistently in the Dashboard and summaries.
+31. As a student, I want to set a recurring monthly budget for an expense category from a chosen calendar month onward so that I can plan future spending without rewriting past budget periods.
+32. As a student, I want to change or stop a recurring budget from a chosen calendar month onward so that earlier monthly reports retain their recorded budget context.
+33. As a student, I want to set a one-time budget override for one expense category and calendar month so that an exceptional month does not change my recurring plan.
+34. As a student, I want to see a compact budget-progress summary for each budgeted expense category.
+35. As a student, I want to continue recording expenses after exceeding a budget so that the application records what actually happened instead of blocking transactions.
+36. As a student, I want over-budget categories to be visibly marked so that I can notice overspending quickly.
+37. As a student, I want expenses in categories without an explicit budget to be handled consistently in the Dashboard and summaries.
    Expenses in categories without a budget count toward overall spending and do not receive a budget-progress calculation.
 
 ### Dashboard and reporting
 
-37. As a student, I want to view a monthly summary of income so that I know how much money entered my records during the month.
-38. As a student, I want to view a monthly summary of expenses so that I know how much I spent during the month.
-39. As a student, I want to view my monthly net balance so that I can compare income and expenses.
-40. As a student, I want to view spending grouped by category so that I can identify major spending areas.
-41. As a student, I want to view a budget-versus-spending bar chart so that I can compare planned and actual expense amounts visually.
-42. As a student, I want the Dashboard to use the selected month consistently so that the figures and chart are not misleading.
+38. As a student, I want to view a monthly summary of income so that I know how much money entered my records during the month.
+39. As a student, I want to view a monthly summary of expenses so that I know how much I spent during the month.
+40. As a student, I want to view my monthly net balance so that I can compare income and expenses.
+41. As a student, I want to view spending grouped by category so that I can identify major spending areas.
+42. As a student, I want to view a budget-versus-spending bar chart so that I can compare planned and actual expense amounts visually.
+43. As a student, I want the Dashboard to use the selected month consistently so that the figures and chart are not misleading.
 
 ### Data and settings
 
-43. As a student, I want the application to save changes locally after successful operations so that my records are not lost when I close the application.
-44. As a student, I want the application to reload my saved data when it starts so that I can continue where I left off.
-45. As a student, I want to export my complete application data manually so that I can create a backup.
-46. As a student, I want to import a previous backup so that I can restore my data or move it to another local installation.
-47. As a student, I want invalid or incompatible import files to be rejected clearly so that an import does not silently corrupt my data.
-48. As a student, I want the application to ask for confirmation before replacing current data during an import so that I do not overwrite my records accidentally.
+44. As a student, I want the application to save changes locally after successful operations so that my records are not lost when I close the application.
+45. As a student, I want the application to reload my saved data when it starts so that I can continue where I left off.
+46. As a student, I want to export my complete application data manually so that I can create a backup.
+47. As a student, I want to import a previous backup so that I can restore my data or move it to another local installation.
+48. As a student, I want invalid or incompatible import files to be rejected clearly so that an import does not silently corrupt my data.
+49. As a student, I want the application to ask for confirmation before replacing current data during an import so that I do not overwrite my records accidentally.
 
 ## Implementation Decisions
 
@@ -228,7 +229,9 @@ Category lifecycle:
 
 Budgets apply only to expense categories.
 
-The MVP uses at most one budget per expense category per calendar month. A budget is optional. If no budget is set, the category remains usable and its expenses count toward overall spending, but the category displays `No budget` and has no percentage-used or over-budget calculation.
+The MVP supports two budget scopes: a recurring monthly value effective from a chosen calendar month onward, and a one-time override for one selected calendar month. The latest recurring value effective for a month supplies its default budget. Changing or removing recurrence takes effect from the selected month onward and does not rewrite earlier months. A one-time override takes precedence over the recurring value for its month only; removing it reveals the applicable recurring value again. There is at most one effective budget per expense category per calendar month.
+
+A budget is optional. If neither scope supplies a budget for a month, the category remains usable and its expenses count toward overall spending, but the category displays `No budget` and has no percentage-used or over-budget calculation.
 
 Budget amounts may be zero and support at most two decimal places. Negative budget amounts and values with more than two decimal places are invalid. An explicit `$0.00` budget means that the user intends to permit no spending in that category: zero spending remains within budget, while any positive spending is over budget. Percentage-used calculations are not displayed for a zero budget.
 
@@ -254,7 +257,7 @@ The persistence file is stored relative to the application in a clearly defined 
 
 ```text
 application-folder/
-├── moneymap.jar
+├── MoneyMap.jar
 └── data/
     └── moneymap.json
 ```
