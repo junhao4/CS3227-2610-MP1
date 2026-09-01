@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * The complete Issue #3 application state persisted by MoneyMap.
+ * An immutable MoneyMap application-state snapshot persisted by the repository.
  *
  * @param categories all available transaction categories
  * @param transactions all recorded transactions

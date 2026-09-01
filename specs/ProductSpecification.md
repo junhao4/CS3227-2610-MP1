@@ -30,7 +30,7 @@ The application is divided into four main areas:
 3. Categories and Budgets
 4. Data and Settings
 
-The Dashboard provides a high-level view of the selected month, including income, expenses, net balance, category spending, and budget status.
+The Dashboard provides a high-level view of the selected month, including income, expenses, net balance, category spending, and budget progress.
 
 The Transactions area allows the user to create, edit, delete, search, filter, and review income and expense transactions.
 
@@ -40,7 +40,7 @@ The Data and Settings area provides local-data and backup-related functions, inc
 
 The application stores data locally and automatically saves successful changes. It is intended to work offline and does not require an account, cloud service, bank connection, or network connection.
 
-All monetary values use Singapore dollars (SGD). The preferred display format is `S$1,240.00`, with two decimal places.
+All monetary values use Singapore dollars (SGD). The preferred display format is `$1,240.00`, with two decimal places.
 
 ## Numbered User Stories
 
@@ -50,7 +50,7 @@ All monetary values use Singapore dollars (SGD). The preferred display format is
 2. As a student, I want to record an expense transaction so that I can track where my money is being spent.
 3. As a student, I want to select whether a transaction is income or expense so that the application can process it correctly.
 4. As a student, I want to enter a transaction amount with up to two decimal places so that ordinary SGD amounts can be recorded accurately.
-5. As a student, I want to save a transaction with an amount of `S$0.00` so that I can use zero as a placeholder when the amount is temporarily unknown.
+5. As a student, I want to save a transaction with an amount of `$0.00` so that I can use zero as a placeholder when the amount is temporarily unknown.
 6. As a student, I want negative amounts to be rejected so that the meaning of each transaction remains unambiguous.
 7. As a student, I want a transaction date to default to today so that entering ordinary transactions is quick.
 8. As a student, I want to record transactions dated in the past, present, or future so that I can maintain records and plan upcoming entries.
@@ -84,11 +84,11 @@ All monetary values use Singapore dollars (SGD). The preferred display format is
 
 31. As a student, I want to set a monthly budget for an expense category so that I can control spending in that category.
 32. As a student, I want budgets to use fixed calendar months so that budget periods are predictable and easy to understand.
-33. As a student, I want to see the budgeted amount, actual spending, remaining amount, percentage used, and budget status for each budgeted expense category.
+33. As a student, I want to see a compact budget-progress summary for each budgeted expense category.
 34. As a student, I want to continue recording expenses after exceeding a budget so that the application records what actually happened instead of blocking transactions.
 35. As a student, I want over-budget categories to be visibly marked so that I can notice overspending quickly.
 36. As a student, I want expenses in categories without an explicit budget to be handled consistently in the Dashboard and summaries.
-   Expenses in categories without a budget count toward overall spending and are displayed with a `No budget` status rather than a percentage-used or over-budget calculation.
+   Expenses in categories without a budget count toward overall spending and do not receive a budget-progress calculation.
 
 ### Dashboard and reporting
 
@@ -166,9 +166,9 @@ Notes are optional and may contain up to 200 characters. They should be searchab
 
 The fixed currency for the MVP is Singapore dollars (SGD).
 
-The preferred user-facing format is `S$1,240.00`, with two decimal places. Currency formatting should be performed by Java code or a presentation-formatting component rather than hard-coded throughout FXML.
+The preferred user-facing format is `$1,240.00`, with two decimal places. Currency formatting should be performed by Java code or a presentation-formatting component rather than hard-coded throughout FXML.
 
-FXML should avoid using a raw dollar sign as the beginning of a literal attribute value because `$` can be interpreted as an FXML expression prefix. Static prototype text should use an FXML-safe representation, such as an embedded `S$` value or an XML character entity where necessary.
+FXML should avoid using a raw dollar sign as the beginning of a literal attribute value because `$` can be interpreted as an FXML expression prefix. Static prototype text should use an FXML-safe representation, such as an XML character entity where necessary.
 
 Multi-currency support, currency conversion, exchange rates, and locale-specific currency switching are out of scope.
 
@@ -230,9 +230,9 @@ Budgets apply only to expense categories.
 
 The MVP uses at most one budget per expense category per calendar month. A budget is optional. If no budget is set, the category remains usable and its expenses count toward overall spending, but the category displays `No budget` and has no percentage-used or over-budget calculation.
 
-Budget amounts may be zero and support at most two decimal places. Negative budget amounts and values with more than two decimal places are invalid. An explicit `S$0.00` budget means that the user intends to permit no spending in that category: zero spending remains within budget, while any positive spending is over budget. Percentage-used calculations are not displayed for a zero budget.
+Budget amounts may be zero and support at most two decimal places. Negative budget amounts and values with more than two decimal places are invalid. An explicit `$0.00` budget means that the user intends to permit no spending in that category: zero spending remains within budget, while any positive spending is over budget. Percentage-used calculations are not displayed for a zero budget.
 
-For each budgeted category and selected month, the application should calculate and display the budgeted amount, actual expense amount, remaining amount, percentage of budget used, and budget status.
+For each budgeted category and selected month, the Dashboard displays a compact row containing the category, the spent/budget amount, and a rounded progress bar. Detailed remaining amounts, percentage-used values, and text budget-status labels are out of scope for the Dashboard.
 
 Overspending is allowed. An expense should not be blocked because it causes a category to exceed its budget.
 
@@ -283,7 +283,7 @@ The selected prototype layouts are Dashboard A summary-first, Transactions A lis
 
 The interface should make the selected month visible when displaying monthly summaries, budgets, and charts.
 
-The MVP provides baseline desktop accessibility: every input has a visible label, every interactive control has an understandable label or accessible description, keyboard focus can reach every interactive control, tab order follows the visual order, dialogs support standard confirmation and cancellation keys, and invalid inputs receive clear text feedback. Budget state is not communicated by colour alone; progress states also include text such as `Within budget`, `Near limit`, or `Over budget`.
+The MVP provides baseline desktop accessibility: every input has a visible label, every interactive control has an understandable label or accessible description, keyboard focus can reach every interactive control, tab order follows the visual order, dialogs support standard confirmation and cancellation keys, and invalid inputs receive clear text feedback. Dashboard budget progress is a compact visual-only summary; visible and accessible text budget-status labels are out of scope.
 
 ## Testing Decisions
 
@@ -291,7 +291,7 @@ The application should be tested at multiple levels.
 
 ### Domain and validation tests
 
-The domain and service layers should have automated tests for income creation, expense creation, positive and zero amounts, negative amounts, amounts with zero to two decimal places, amounts with more than two decimal places, required dates, past/present/future dates, optional notes, note-length limits, category-type compatibility, category creation/renaming/archiving/deletion, category deletion with and without transactions, monthly budget calculations, under-budget/near-budget/over-budget states, overspending, expenses in categories without budgets, transaction editing, and confirmed/cancelled deletion.
+The domain and service layers should have automated tests for income creation, expense creation, positive and zero amounts, negative amounts, amounts with zero to two decimal places, amounts with more than two decimal places, required dates, past/present/future dates, optional notes, note-length limits, category-type compatibility, category creation/renaming/archiving/deletion, category deletion with and without transactions, monthly budget calculations, progress-threshold boundaries, overspending, expenses in categories without budgets, transaction editing, and confirmed/cancelled deletion.
 
 ### Persistence tests
 

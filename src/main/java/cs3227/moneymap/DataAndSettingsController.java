@@ -15,7 +15,7 @@ import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
-/** Connects the Data and Settings view to complete local-backup export. */
+/** Connects the Data and Settings view to local-backup export and import. */
 public final class DataAndSettingsController {
     private static final DateTimeFormatter BACKUP_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -92,6 +92,7 @@ public final class DataAndSettingsController {
         confirmation.setHeaderText("Replace all current MoneyMap data?");
         confirmation.setContentText("This replaces categories, transactions, and budgets. It cannot be undone.");
         confirmation.getButtonTypes().setAll(replace, ButtonType.CANCEL);
+        DialogStyler.applyDanger(confirmation);
         confirmation.showAndWait().filter(replace::equals).ifPresent(ignored -> importFrom(source));
     }
 
