@@ -57,7 +57,7 @@
             <ComboBox prefWidth="180" promptText="August 2026" />
             <Label text="The month changes this list only." styleClass="muted" />
         </HBox>
-        <VBox spacing="0" styleClass="panel budget-list-panel">
+        <VBox spacing="0" styleClass="panel, budget-list-panel">
             <HBox styleClass="table-header"><Label text="CATEGORY" prefWidth="230" /><Label text="BUDGET" prefWidth="180" /><Label text="APPLIES" prefWidth="170" /><Label HBox.hgrow="ALWAYS" /></HBox>
             <HBox alignment="CENTER_LEFT" styleClass="budget-table-row"><Label text="Food" prefWidth="230" styleClass="row-label" /><Label text="S$450.00" prefWidth="180" styleClass="amount-label" /><Label text="This month only" prefWidth="170" styleClass="warning" /><Label HBox.hgrow="ALWAYS" /><Button text="Manage" styleClass="text-button" /></HBox>
             <HBox alignment="CENTER_LEFT" styleClass="budget-table-row"><Label text="Transport" prefWidth="230" styleClass="row-label" /><Label text="S$80.00" prefWidth="180" styleClass="amount-label" /><Label text="Every month" prefWidth="170" styleClass="positive" /><Label HBox.hgrow="ALWAYS" /><Button text="Manage" styleClass="text-button" /></HBox>

@@ -8,7 +8,7 @@
     <padding><Insets top="34" right="42" bottom="34" left="42" /></padding>
     <HBox alignment="TOP_RIGHT"><VBox HBox.hgrow="ALWAYS" spacing="4"><Label text="Good afternoon, Alex" styleClass="page-title"/><Label text="Here is your spending picture for August 2026." styleClass="muted"/></VBox><Label text="PROTOTYPE v0.4 · BAR-STATE-FIX" styleClass="build-marker"/></HBox>
     <HBox spacing="16">
-        <VBox HBox.hgrow="ALWAYS" styleClass="metric-card accent"><Label text="Remaining this month" styleClass="card-label"/><Label text="426.80" styleClass="metric-value"/><Label text="of 900.00 planned spending" styleClass="positive"/></VBox>
+        <VBox HBox.hgrow="ALWAYS" styleClass="metric-card, accent"><Label text="Remaining this month" styleClass="card-label"/><Label text="426.80" styleClass="metric-value"/><Label text="of 900.00 planned spending" styleClass="positive"/></VBox>
         <VBox HBox.hgrow="ALWAYS" styleClass="metric-card"><Label text="Spent so far" styleClass="card-label"/><Label text="473.20" styleClass="metric-value"/><Label text="52.6% of monthly plan" styleClass="muted"/></VBox>
         <VBox HBox.hgrow="ALWAYS" styleClass="metric-card"><Label text="Income recorded" styleClass="card-label"/><Label text="1,200.00" styleClass="metric-value"/><Label text="2 income entries" styleClass="muted"/></VBox>
     </HBox>

@@ -67,6 +67,7 @@ public class MoneyMapApp extends Application {
         alert.setTitle("MoneyMap data recovery");
         alert.setHeaderText("Saved data could not be loaded");
         alert.setContentText(transactionService.startupWarning());
+        DialogStyler.apply(alert);
         alert.show();
     }
 

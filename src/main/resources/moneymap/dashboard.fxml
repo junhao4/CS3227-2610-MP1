@@ -39,13 +39,13 @@
                       spacing="8" styleClass="category-card, quick-totals">
             <Label text="Quick totals" styleClass="section-title" />
             <Label text="Income" styleClass="card-label" />
-            <Label fx:id="incomeTotal" styleClass="metric-value small" />
+            <Label fx:id="incomeTotal" styleClass="metric-value, small" />
             <Label text="Expenses" styleClass="card-label" />
-            <Label fx:id="expenseTotal" styleClass="metric-value small" />
+            <Label fx:id="expenseTotal" styleClass="metric-value, small" />
             <Label text="Planned budget" styleClass="card-label" />
-            <Label fx:id="plannedTotal" styleClass="metric-value small" />
+            <Label fx:id="plannedTotal" styleClass="metric-value, small" />
             <Label text="Net balance" styleClass="card-label" />
-            <Label fx:id="netTotal" styleClass="positive metric-value small" />
+            <Label fx:id="netTotal" styleClass="positive, metric-value, small" />
         </VBox>
     </GridPane>
             <VBox spacing="10" styleClass="category-card">

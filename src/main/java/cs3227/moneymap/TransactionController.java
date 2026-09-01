@@ -346,6 +346,7 @@ public final class TransactionController {
         confirmation.setHeaderText("Permanently delete this transaction?");
         confirmation.setContentText(transaction.date() + " — " + SgdFormatter.format(transaction.amount())
                 + " in " + transaction.category().name() + ". This cannot be undone.");
+        DialogStyler.applyDanger(confirmation);
         confirmation.showAndWait().filter(button -> button == ButtonType.OK).ifPresent(button -> {
             try {
                 service.deleteTransaction(transaction.id());

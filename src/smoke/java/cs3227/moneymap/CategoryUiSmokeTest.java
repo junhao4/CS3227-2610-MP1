@@ -402,7 +402,7 @@ public class CategoryUiSmokeTest extends Application {
     }
 
     private static DialogPane openCategoryDialog() {
-        return Window.getWindows().stream()
+        DialogPane dialogPane = Window.getWindows().stream()
                 .filter(Window::isShowing)
                 .map(Window::getScene)
                 .filter(Objects::nonNull)
@@ -412,6 +412,8 @@ public class CategoryUiSmokeTest extends Application {
                 .map(DialogPane.class::cast)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("New category dialog was not shown"));
+        assertMoneyMapDialog(dialogPane);
+        return dialogPane;
     }
 
     private static boolean hasOpenCategoryDialog() {
@@ -523,7 +525,7 @@ public class CategoryUiSmokeTest extends Application {
 
     /** Returns the currently shown JavaFX dialog pane. */
     private static DialogPane openDialogPane() {
-        return Window.getWindows().stream()
+        DialogPane dialogPane = Window.getWindows().stream()
                 .filter(Window::isShowing)
                 .map(Window::getScene)
                 .filter(java.util.Objects::nonNull)
@@ -532,6 +534,15 @@ public class CategoryUiSmokeTest extends Application {
                 .map(DialogPane.class::cast)
                 .reduce((first, second) -> second)
                 .orElseThrow(() -> new IllegalStateException("Expected confirmation dialog was not shown"));
+        assertMoneyMapDialog(dialogPane);
+        return dialogPane;
+    }
+
+    private static void assertMoneyMapDialog(DialogPane dialogPane) {
+        require(dialogPane.getStyleClass().contains("moneymap-dialog"),
+                "Dialog did not use the MoneyMap theme");
+        require(dialogPane.getStylesheets().stream().anyMatch(url -> url.endsWith("/styles/moneymap.css")),
+                "Dialog did not attach the MoneyMap stylesheet");
     }
 
     private static void require(boolean condition, String message) {

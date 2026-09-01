@@ -31,7 +31,7 @@
                             </VBox>
                             <Button fx:id="transactionFilterToggleButton" id="transactionFilterToggleButton" text="Filter &amp; sort" onAction="#toggleTransactionFilters" styleClass="secondary-button" accessibleText="Show or hide transaction filters" />
                         </HBox>
-                        <VBox fx:id="transactionFilterPanel" id="transactionFilterPanel" managed="false" visible="false" spacing="12" styleClass="panel transaction-filter-panel">
+                        <VBox fx:id="transactionFilterPanel" id="transactionFilterPanel" managed="false" visible="false" spacing="12" styleClass="panel, transaction-filter-panel">
                             <Label text="Filter transactions" styleClass="section-title" />
                             <GridPane hgap="18" vgap="8">
                                 <columnConstraints>
@@ -56,7 +56,7 @@
                         <Region HBox.hgrow="ALWAYS" />
                         <Button fx:id="addTransactionButton" id="addTransactionButton" text="＋ Add transaction" onAction="#focusTransactionForm" styleClass="primary-button" accessibleText="Go to the add transaction form" />
                     </HBox>
-                    <VBox fx:id="transactionListSection" id="transactionListSection" spacing="0" styleClass="panel transaction-table">
+                    <VBox fx:id="transactionListSection" id="transactionListSection" spacing="0" styleClass="panel, transaction-table">
                         <VBox fx:id="transactionRows" id="transactionRows" spacing="0" />
                         <VBox fx:id="transactionEmptyState" alignment="CENTER" spacing="6" styleClass="transaction-empty-state">
                             <Label fx:id="transactionEmptyTitle" text="No transactions recorded" styleClass="section-title" />
@@ -64,7 +64,7 @@
                         </VBox>
                     </VBox>
                 </VBox>
-                <VBox fx:id="transactionForm" id="transactionForm" managed="false" visible="false" spacing="16" styleClass="panel transaction-form transaction-form-page">
+                <VBox fx:id="transactionForm" id="transactionForm" managed="false" visible="false" spacing="16" styleClass="panel, transaction-form, transaction-form-page">
                     <HBox alignment="CENTER_LEFT">
                         <Button fx:id="backToTransactionsButton" id="backToTransactionsButton" text="← Back to transactions" cancelButton="true" onAction="#cancelTransaction" styleClass="text-button" accessibleText="Discard changes and return to transactions" />
                     </HBox>

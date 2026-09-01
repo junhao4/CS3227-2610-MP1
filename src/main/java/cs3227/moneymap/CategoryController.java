@@ -155,6 +155,7 @@ public final class CategoryController {
         categoryCreationDialog.setHeaderText("Create an income or expense category");
         categoryCreationDialog.getDialogPane().setContent(categoryCreationPanel);
         categoryCreationDialog.getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
+        DialogStyler.apply(categoryCreationDialog);
         categoryCreationDialog.setOnCloseRequest(event -> hideCategoryCreation());
         categoryCreationDialog.setOnHidden(event -> {
             categoryCreationDialog = null;
@@ -560,7 +561,7 @@ public final class CategoryController {
     private void addExpenseSummary(VBox card, Category category, YearMonth month) {
         java.math.BigDecimal spent = service.spendingFor(category.id(), month).value();
         Budget budget = service.budgetFor(category.id(), month).orElse(null);
-            Label spending = new Label(cardMoney(new cs3227.moneymap.domain.MoneyAmount(spent)) + " spent");
+        Label spending = new Label(cardMoney(new cs3227.moneymap.domain.MoneyAmount(spent)) + " spent");
         constrainCardLabel(spending);
         spending.getStyleClass().add("metric-value");
         Label budgetSummary = new Label(budget == null ? "No budget set" : budget.amount().value().signum() == 0
@@ -623,6 +624,7 @@ public final class CategoryController {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Manage category");
         dialog.setHeaderText(category.name() + " · " + displayType(category.type()));
+        DialogStyler.apply(dialog);
         if (category.permanentFallback()) {
             dialog.setContentText("Uncategorised is a permanent fallback category and cannot be changed.");
             dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
@@ -691,6 +693,7 @@ public final class CategoryController {
         dialog.setTitle("Rename category");
         dialog.setHeaderText("Rename " + category.name());
         dialog.setContentText("New name:");
+        DialogStyler.apply(dialog);
         dialog.showAndWait().ifPresent(name -> {
             try {
                 service.renameCategory(category.id(), name);
@@ -706,6 +709,7 @@ public final class CategoryController {
         confirmation.setTitle("Archive category");
         confirmation.setHeaderText("Archive " + category.name() + "?");
         confirmation.setContentText("It will remain visible in history but cannot be used for new transactions.");
+        DialogStyler.apply(confirmation);
         confirmation.showAndWait().filter(button -> button == ButtonType.OK).ifPresent(button -> {
             try {
                 service.archiveCategory(category.id());
@@ -738,6 +742,7 @@ public final class CategoryController {
         selection.setTitle("Reassign transactions");
         selection.setHeaderText("Reassign transactions from " + source.name());
         selection.setContentText("Move all transactions to:");
+        DialogStyler.apply(selection);
         selection.showAndWait().ifPresent(target -> confirmReassignment(source, target));
     }
 
@@ -748,6 +753,7 @@ public final class CategoryController {
         confirmation.setHeaderText("Move transactions from " + source.name() + " to " + target.name() + "?");
         confirmation.setContentText("This changes the category shown for every transaction currently using "
                 + source.name() + ".");
+        DialogStyler.apply(confirmation);
         confirmation.showAndWait().filter(button -> button == ButtonType.OK).ifPresent(button -> {
             try {
                 int reassigned = service.reassignTransactions(source.id(), target.id());
@@ -765,6 +771,7 @@ public final class CategoryController {
         confirmation.setTitle("Delete category");
         confirmation.setHeaderText("Permanently delete " + category.name() + "?");
         confirmation.setContentText("This cannot be undone. Categories used by transactions must be reassigned first.");
+        DialogStyler.applyDanger(confirmation);
         confirmation.showAndWait().filter(button -> button == ButtonType.OK).ifPresent(button -> {
             try {
                 service.deleteCategory(category.id());

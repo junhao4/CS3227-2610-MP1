@@ -17,7 +17,7 @@
             <Button id="transactionsButton" maxWidth="Infinity" text="Transactions" onAction="#showTransactions" styleClass="nav-button" />
             <Button id="categoriesAndBudgetsButton" maxWidth="Infinity" text="Categories and Budgets" onAction="#showCategoriesAndBudgets" styleClass="nav-button" />
             <VBox VBox.vgrow="ALWAYS" />
-            <Button id="dataAndSettingsButton" maxWidth="Infinity" text="Data and Settings" onAction="#showDataAndSettings" styleClass="nav-button secondary" />
+            <Button id="dataAndSettingsButton" maxWidth="Infinity" text="Data and Settings" onAction="#showDataAndSettings" styleClass="nav-button, secondary" />
             <Label text="PRODUCTION SHELL · v0.1" styleClass="sidebar-footer" />
         </VBox>
     </left>

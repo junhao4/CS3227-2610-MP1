@@ -26,7 +26,7 @@
             <Button maxWidth="Infinity" text="B · Category cards" onAction="#showCategoriesB" styleClass="nav-button" />
             <Button maxWidth="Infinity" text="C · Progressive disclosure" onAction="#showCategoriesC" styleClass="nav-button" />
             <VBox VBox.vgrow="ALWAYS" />
-            <Button maxWidth="Infinity" text="Data &amp; Settings" onAction="#showSettings" styleClass="nav-button secondary" />
+            <Button maxWidth="Infinity" text="Data &amp; Settings" onAction="#showSettings" styleClass="nav-button, secondary" />
             <Label text="STATIC UI EXPLORATION · v0.1" styleClass="sidebar-footer" />
         </VBox>
     </left>
